@@ -262,7 +262,8 @@ func (cb *callbacks) OnStreamClosed(id int64) {
 		log.Printf("stream %d closed\n", id)
 	}
 }
-func (cb *callbacks) OnStreamRequest(int64, *v2.DiscoveryRequest) error {
+
+func (cb *callbacks) OnStreamRequest(id int64, req *v2.DiscoveryRequest) error {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
 	cb.requests++
@@ -272,8 +273,12 @@ func (cb *callbacks) OnStreamRequest(int64, *v2.DiscoveryRequest) error {
 	}
 	return nil
 }
-func (cb *callbacks) OnStreamResponse(int64, *v2.DiscoveryRequest, *v2.DiscoveryResponse) {}
-func (cb *callbacks) OnFetchRequest(_ context.Context, req *v2.DiscoveryRequest) error {
+
+func (cb *callbacks) OnStreamResponse(id int64, req *v2.DiscoveryRequest, resp *v2.DiscoveryResponse) {
+
+}
+
+func (cb *callbacks) OnFetchRequest(ctx context.Context, req *v2.DiscoveryRequest) error {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
 	cb.fetches++
@@ -283,4 +288,6 @@ func (cb *callbacks) OnFetchRequest(_ context.Context, req *v2.DiscoveryRequest)
 	}
 	return nil
 }
-func (cb *callbacks) OnFetchResponse(*v2.DiscoveryRequest, *v2.DiscoveryResponse) {}
+func (cb *callbacks) OnFetchResponse(req *v2.DiscoveryRequest, resp *v2.DiscoveryResponse) {
+
+}
