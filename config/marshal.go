@@ -10,8 +10,25 @@ import (
 	envoy_config_bootstrap_v2 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
 	"sigs.k8s.io/yaml"
 )
+
+var unmarshaler = jsonpb.Unmarshaler{
+	AnyResolver: ResolveFunc(defaultResolveAny),
+}
+
+func UnmarshalAny(a *any.Any) (proto.Message, error) {
+	msg, err := defaultResolveAny(a.TypeUrl)
+	if err != nil {
+		return nil, err
+	}
+	err = proto.Unmarshal(a.Value, msg)
+	if err != nil {
+		return nil, err
+	}
+	return msg, nil
+}
 
 func UnmarshalBootstrap(config []byte) (*envoy_config_bootstrap_v2.Bootstrap, error) {
 	config, err := yaml.YAMLToJSON(config)
@@ -20,9 +37,6 @@ func UnmarshalBootstrap(config []byte) (*envoy_config_bootstrap_v2.Bootstrap, er
 	}
 
 	bootstrap := &envoy_config_bootstrap_v2.Bootstrap{}
-	unmarshaler := jsonpb.Unmarshaler{
-		AnyResolver: ResolveFunc(defaultResolveAny),
-	}
 
 	dec := json.NewDecoder(bytes.NewBuffer(config))
 	dec.DisallowUnknownFields()

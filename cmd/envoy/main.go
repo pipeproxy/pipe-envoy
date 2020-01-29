@@ -1,18 +1,22 @@
 package main
 
 import (
+	"context"
 	"io/ioutil"
 
+	_ "github.com/wzshiming/envoy/init"
+
 	"github.com/spf13/pflag"
-	"github.com/wzshiming/envoy/bootstrap"
+	"github.com/wzshiming/envoy/convert"
 	"github.com/wzshiming/envoy/internal/logger"
+	"github.com/wzshiming/pipe"
 )
 
-var config string
+var conf string
 var debug bool
 
 func init() {
-	pflag.StringVarP(&config, "config", "c", "", "")
+	pflag.StringVarP(&conf, "config", "c", "", "")
 	pflag.BoolVarP(&debug, "debug", "d", false, "")
 	if debug {
 		logger.Debug()
@@ -24,27 +28,25 @@ func init() {
 }
 
 func main() {
-
-	data, err := ioutil.ReadFile(config)
+	data, err := ioutil.ReadFile(conf)
 	if err != nil {
 		logger.Fatalln(err)
 	}
 
-	config, err := bootstrap.UnmarshalBootstrap(data)
+	ctx, conf, err := convert.ConvertXDS(context.Background(), data)
 	if err != nil {
 		logger.Fatalln(err)
 	}
 
-	boot, err := bootstrap.NewBootstrap(config)
+	pipe, err := pipe.NewPipeWithConfig(ctx, conf)
 	if err != nil {
 		logger.Fatalln(err)
 	}
 
-	err = boot.Start()
+	err = pipe.Run()
 	if err != nil {
 		logger.Fatalln(err)
 	}
 
-	logger.Infoln("started")
-	<-make(chan struct{})
+	return
 }
