@@ -18,7 +18,7 @@ else
   RUNTIMES=1
 fi
 
-(bin/e2e --xds=${XDS} --runtimes=${RUNTIMES} -debug "$@")&
+(bin/e2e --xds=${XDS} --runtimes=${RUNTIMES} --debug "$@")&
 SERVER_PID=$!
 
 # Envoy start-up command
@@ -27,7 +27,7 @@ ENVOY_LOG="envoy.${XDS}.log"
 echo Envoy log: ${ENVOY_LOG}
 
 # Start envoy: important to keep drain time short
-(${ENVOY} -c examples/${XDS}.yml -d> ${ENVOY_LOG})&
+(${ENVOY} -c examples/${XDS}.yml -d > ${ENVOY_LOG} 2>&1)&
 ENVOY_PID=$!
 
 function cleanup() {
