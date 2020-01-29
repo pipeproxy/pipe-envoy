@@ -66,19 +66,19 @@ func (w *wrapLogger) Infoln(v ...interface{}) {
 // Error calls Output to print to the standard logger.
 // Arguments are handled in the manner of fmt.Print.
 func (w *wrapLogger) Error(v ...interface{}) {
-	w.Output(w.depth, "[ERROR]"+fmt.Sprint(v...))
+	w.Output(w.depth, "[ERROR] "+fmt.Sprint(v...))
 }
 
 // Errorf calls Output to print to the standard logger.
 // Arguments are handled in the manner of fmt.Printf.
 func (w *wrapLogger) Errorf(format string, v ...interface{}) {
-	w.Output(w.depth, "[ERROR]"+fmt.Sprintf(format, v...))
+	w.Output(w.depth, "[ERROR] "+fmt.Sprintf(format, v...))
 }
 
 // Errorln calls Output to print to the standard logger.
 // Arguments are handled in the manner of fmt.Println.
 func (w *wrapLogger) Errorln(v ...interface{}) {
-	w.Output(w.depth, "[ERROR]"+fmt.Sprintln(v...))
+	w.Output(w.depth, "[ERROR] "+fmt.Sprintln(v...))
 }
 
 // Warn calls Output to print to the standard logger.
