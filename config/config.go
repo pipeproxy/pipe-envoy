@@ -8,29 +8,33 @@ import (
 	"fmt"
 )
 
-type ConfigCtx struct {
+type Config struct {
 	Pipe       json.RawMessage
 	Init       []json.RawMessage `json:",omitempty"`
 	Components []json.RawMessage `json:",omitempty"`
+}
 
-	EDS                 []string            `json:"-"`
-	RDS                 []string            `json:"-"`
-	Ctx                 context.Context     `json:"-"`
-	Services            []string            `json:"-"`
-	DuplicateComponents map[string]struct{} `json:"-"`
+type ConfigCtx struct {
+	Init         []json.RawMessage
+	ComponentMap map[string]json.RawMessage
+	EDS          []string
+	RDS          []string
+	Ctx          context.Context
+	Services     []string
 }
 
 func (c ConfigCtx) MarshalJSON() ([]byte, error) {
+	conf := Config{}
 	switch len(c.Services) {
 	case 0:
-		c.Pipe = []byte(`{"@Kind":"none"}`)
+		conf.Pipe = []byte(`{"@Kind":"none"}`)
 	case 1:
 
 		pipe, err := MarshalRef(c.Services[0])
 		if err != nil {
 			return nil, err
 		}
-		c.Pipe = pipe
+		conf.Pipe = pipe
 
 	default:
 		list := []json.RawMessage{}
@@ -46,10 +50,15 @@ func (c ConfigCtx) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		c.Pipe = pipe
+		conf.Pipe = pipe
 	}
-	type tmp ConfigCtx
-	return json.Marshal(tmp(c))
+
+	for _, component := range c.ComponentMap {
+		conf.Components = append(conf.Components, component)
+	}
+	conf.Init = c.Init
+
+	return json.Marshal(conf)
 }
 
 func MarshalKind(kind string, i interface{}) (json.RawMessage, error) {
@@ -88,19 +97,19 @@ func (c *ConfigCtx) RegisterComponents(name string, d json.RawMessage) (string, 
 		return "", err
 	}
 
-	if c.DuplicateComponents == nil {
-		c.DuplicateComponents = map[string]struct{}{}
+	if c.ComponentMap == nil {
+		c.ComponentMap = map[string]json.RawMessage{}
 	}
-	if _, ok := c.DuplicateComponents[n]; ok {
-		return n, nil
-	}
-	c.DuplicateComponents[n] = struct{}{}
-
-	c.Components = append(c.Components, d)
+	c.ComponentMap[n] = d
 	return n, nil
 }
 
 func (c *ConfigCtx) RegisterService(name string) error {
+	for _, services := range c.Services {
+		if services == name {
+			return nil
+		}
+	}
 	c.Services = append(c.Services, name)
 	return nil
 }
