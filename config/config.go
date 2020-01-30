@@ -6,14 +6,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"sync"
 )
-
-type Config struct {
-	Pipe       json.RawMessage
-	Init       []json.RawMessage `json:",omitempty"`
-	Components []json.RawMessage `json:",omitempty"`
-}
 
 type ConfigCtx struct {
 	init         []json.RawMessage
@@ -29,7 +24,12 @@ func (c *ConfigCtx) MarshalJSON() ([]byte, error) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 
-	conf := Config{}
+	conf := struct {
+		Pipe       json.RawMessage
+		Init       []json.RawMessage `json:",omitempty"`
+		Components []json.RawMessage `json:",omitempty"`
+	}{}
+
 	switch len(c.services) {
 	case 0:
 		conf.Pipe = []byte(`{"@Kind":"none"}`)
@@ -58,9 +58,17 @@ func (c *ConfigCtx) MarshalJSON() ([]byte, error) {
 		conf.Pipe = pipe
 	}
 
-	for _, component := range c.componentMap {
-		conf.Components = append(conf.Components, component)
+	keys := make([]string, 0, len(c.componentMap))
+	for key := range c.componentMap {
+		keys = append(keys, key)
 	}
+	sort.Strings(keys)
+
+	conf.Components = make([]json.RawMessage, 0, len(c.componentMap))
+	for _, key := range keys {
+		conf.Components = append(conf.Components, c.componentMap[key])
+	}
+
 	conf.Init = c.init
 
 	return json.Marshal(conf)
