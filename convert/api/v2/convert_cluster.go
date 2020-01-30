@@ -10,13 +10,8 @@ import (
 )
 
 func Convert_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (string, error) {
-	switch c.GetType() {
-	case envoy_api_v2.Cluster_EDS:
-		if c.Name != "" {
-			conf.AppendEDS(c.Name)
-		}
-		return "", nil
-	case envoy_api_v2.Cluster_STATIC:
+
+	if c.ClusterDiscoveryType == nil {
 		list := []json.RawMessage{}
 		for _, host := range c.Hosts {
 			name, err := convert_api_v2_core.Convert_AddressForward(conf, host)
@@ -27,19 +22,29 @@ func Convert_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (string, e
 			if err != nil {
 				return "", err
 			}
-
 			list = append(list, ref)
 		}
-
 		d, err := config.MarshalKindStreamHandlerPoller("round_robin", list)
 		if err != nil {
 			return "", err
 		}
 
 		name := config.XdsName(c.Name)
-
 		return conf.RegisterComponents(name, d)
 	}
+	switch d := c.ClusterDiscoveryType.(type) {
+	case *envoy_api_v2.Cluster_Type:
+		switch d.Type {
+		case envoy_api_v2.Cluster_EDS:
+			if c.Name != "" {
+				conf.AppendEDS(c.Name)
+			}
+			return "", nil
+
+		}
+	case *envoy_api_v2.Cluster_ClusterType:
+	}
+
 	logger.Todof("%#v", c)
 	return "", nil
 }
