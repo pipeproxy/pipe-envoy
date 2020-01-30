@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net"
 	"path/filepath"
-	"time"
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -184,7 +183,23 @@ func (a *Client) Close() error {
 
 // Run the ADS client.
 func (a *Client) Run() error {
+	err := a.run()
+	if err != nil {
+		return err
+	}
+	return a.handleRecv()
+}
 
+func (a *Client) Start() error {
+	err := a.run()
+	if err != nil {
+		return err
+	}
+	go a.handleRecv()
+	return nil
+}
+
+func (a *Client) run() error {
 	opts := []grpc.DialOption{}
 	if len(a.certDir) != 0 {
 		tlsCfg, err := tlsConfig(a.certDir)
@@ -210,12 +225,7 @@ func (a *Client) Run() error {
 		return err
 	}
 	a.stream = edsstr
-
-	err = a.watch()
-	if err != nil {
-		return err
-	}
-	return a.handleRecv()
+	return nil
 }
 
 func (a *Client) handleRecv() error {
@@ -303,19 +313,6 @@ func (a *Client) node() *envoy_api_v2_core.Node {
 func (a *Client) Send(req *envoy_api_v2.DiscoveryRequest) error {
 	req.Node = a.node()
 	return a.stream.Send(req)
-}
-
-// watch will start watching resources, starting with LDS. Based on the LDS response
-// it will start watching RDS and CDS.
-func (a *Client) watch() error {
-	err := a.Send(&envoy_api_v2.DiscoveryRequest{
-		ResponseNonce: time.Now().String(),
-		TypeUrl:       ClusterType,
-	})
-	if err != nil {
-		return fmt.Errorf("sending request: %w", err)
-	}
-	return nil
 }
 
 func (a *Client) SendRsc(typeurl string, rsc []string) error {

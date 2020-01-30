@@ -21,16 +21,16 @@ func Convert_ApiConfigSource(conf *config.ConfigCtx, c *envoy_api_v2_core.ApiCon
 				}
 
 				nodeID := ""
-				node, ok := GetNodeWithContext(conf.Ctx)
+				node, ok := GetNodeWithContext(conf.Ctx())
 				if ok {
 					nodeID = node.Id
 				}
 
-				r, err = config.MarshalKindOnceXDS(nodeID, r)
+				r, err = config.MarshalKindOnceADS(nodeID, r)
 				if err != nil {
 					return "", err
 				}
-				return conf.RegisterInit(r)
+				return conf.RegisterComponents("", r)
 			case *envoy_api_v2_core.GrpcService_GoogleGrpc_:
 			}
 		}

@@ -26,6 +26,7 @@ const (
 	KindServiceServer        = kindService + "@server"
 	KindServiceMulti         = kindService + "@multi"
 	KindListenConfigNetwork  = kindListenConfig + "@network"
+	KindOnceADS              = kindOnce + "@ads"
 	KindOnceXDS              = kindOnce + "@xds"
 )
 
@@ -139,12 +140,22 @@ func MarshalKindStreamHandlerPoller(poller string, handlers []json.RawMessage) (
 	})
 }
 
-func MarshalKindOnceXDS(nodeID string, forward json.RawMessage) (json.RawMessage, error) {
-	return MarshalKind(KindOnceXDS, struct {
+func MarshalKindOnceADS(nodeID string, forward json.RawMessage) (json.RawMessage, error) {
+	return MarshalKind(KindOnceADS, struct {
 		NodeID  string
 		Forward json.RawMessage
 	}{
 		NodeID:  nodeID,
 		Forward: forward,
+	})
+}
+
+func MarshalKindOnceXDS(xds string, ads json.RawMessage) (json.RawMessage, error) {
+	return MarshalKind(KindOnceXDS, struct {
+		XDS string
+		ADS json.RawMessage
+	}{
+		XDS: xds,
+		ADS: ads,
 	})
 }

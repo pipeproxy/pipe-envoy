@@ -25,8 +25,8 @@ func ConvertXDS(ctx context.Context, data []byte) (context.Context, []byte, erro
 		return nil, nil, err
 	}
 
-	c := &config.ConfigCtx{}
-	c.Ctx = context.WithValue(ctx, xdsCtxKeyType(0), c)
+	c := config.NewConfigCtx(ctx)
+	ctx = c.WithValue(xdsCtxKeyType(0), c)
 
 	_, err = convert_config_bootstrap_v2.Convert_Bootstrap(c, conf)
 	if err != nil {
@@ -37,5 +37,5 @@ func ConvertXDS(ctx context.Context, data []byte) (context.Context, []byte, erro
 	if err != nil {
 		return nil, nil, err
 	}
-	return c.Ctx, pipeConfig, nil
+	return ctx, pipeConfig, nil
 }

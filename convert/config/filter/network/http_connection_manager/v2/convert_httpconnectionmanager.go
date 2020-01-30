@@ -12,7 +12,7 @@ func Convert_HttpConnectionManager(conf *config.ConfigCtx, c *envoy_config_filte
 	case *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager_Rds:
 		name = r.Rds.RouteConfigName
 		if name != "" {
-			conf.RDS = append(conf.RDS, r.Rds.RouteConfigName)
+			conf.AppendRDS(name)
 		}
 
 	case *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager_RouteConfig:

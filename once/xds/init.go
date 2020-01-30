@@ -1,54 +1,37 @@
 package xds
 
 import (
-	"context"
 	"fmt"
-	"net"
 
-	"github.com/wzshiming/envoy/convert"
+	"github.com/wzshiming/envoy/once/ads"
 
-	"github.com/wzshiming/envoy/ads"
 	"github.com/wzshiming/pipe/configure"
 	"github.com/wzshiming/pipe/once"
-	"github.com/wzshiming/pipe/stream"
 )
 
-const name = "xds"
+const (
+	name = "xds"
+)
 
 func init() {
 	configure.Register(name, NewXDSWithConfig)
 }
 
 type Config struct {
-	NodeID  string
-	Forward stream.Handler
+	XDS string
+	ADS once.Once
 }
 
-var xds *XDS
-
-func NewXDSWithConfig(ctx context.Context, conf *Config) (once.Once, error) {
-	if xds != nil {
-		return xds, nil
+func NewXDSWithConfig(conf *Config) (once.Once, error) {
+	a, ok := conf.ADS.(*ads.ADS)
+	if !ok || a == nil {
+		return nil, fmt.Errorf("need ads")
 	}
 
-	adsConfig := ads.Config{
-		NodeID: conf.NodeID,
-		ContextDialer: func(ctx context.Context, s string) (conn net.Conn, err error) {
-			p1, p2 := net.Pipe()
-			go conf.Forward.ServeStream(ctx, p1)
-			return p2, nil
-		},
+	switch conf.XDS {
+	default:
+		return nil, fmt.Errorf("%q is not define in XDS", conf.XDS)
+	case "cds", "lds":
 	}
-
-	config, ok := convert.GetXdsWithContext(ctx)
-	if !ok || config == nil {
-		return nil, fmt.Errorf("xds content is not configured")
-	}
-
-	x, err := NewXDS(config, &adsConfig)
-	if err != nil {
-		return nil, err
-	}
-	xds = x
-	return x, nil
+	return NewXDS(a, conf.XDS), nil
 }

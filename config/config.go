@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"sync"
 )
 
 type Config struct {
@@ -15,22 +16,26 @@ type Config struct {
 }
 
 type ConfigCtx struct {
-	Init         []json.RawMessage
-	ComponentMap map[string]json.RawMessage
-	EDS          []string
-	RDS          []string
-	Ctx          context.Context
-	Services     []string
+	init         []json.RawMessage
+	componentMap map[string]json.RawMessage
+	eds          []string
+	rds          []string
+	ctx          context.Context
+	services     []string
+	mut          sync.Mutex
 }
 
-func (c ConfigCtx) MarshalJSON() ([]byte, error) {
+func (c *ConfigCtx) MarshalJSON() ([]byte, error) {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
 	conf := Config{}
-	switch len(c.Services) {
+	switch len(c.services) {
 	case 0:
 		conf.Pipe = []byte(`{"@Kind":"none"}`)
 	case 1:
 
-		pipe, err := MarshalRef(c.Services[0])
+		pipe, err := MarshalRef(c.services[0])
 		if err != nil {
 			return nil, err
 		}
@@ -38,7 +43,7 @@ func (c ConfigCtx) MarshalJSON() ([]byte, error) {
 
 	default:
 		list := []json.RawMessage{}
-		for _, service := range c.Services {
+		for _, service := range c.services {
 			ref, err := MarshalRef(service)
 			if err != nil {
 				return nil, err
@@ -53,12 +58,110 @@ func (c ConfigCtx) MarshalJSON() ([]byte, error) {
 		conf.Pipe = pipe
 	}
 
-	for _, component := range c.ComponentMap {
+	for _, component := range c.componentMap {
 		conf.Components = append(conf.Components, component)
 	}
-	conf.Init = c.Init
+	conf.Init = c.init
 
 	return json.Marshal(conf)
+}
+
+func (c *ConfigCtx) Ctx() context.Context {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	return c.ctx
+}
+
+func (c *ConfigCtx) WithValue(key, val interface{}) context.Context {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	c.ctx = context.WithValue(c.ctx, key, val)
+	return c.ctx
+}
+
+func (c *ConfigCtx) ResetEDS() []string {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	eds := c.eds
+	c.eds = nil
+	return eds
+}
+
+func (c *ConfigCtx) ResetRDS() []string {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	rds := c.rds
+	c.rds = nil
+	return rds
+}
+
+func (c *ConfigCtx) EDS() []string {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	return c.eds
+}
+
+func (c *ConfigCtx) RDS() []string {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	return c.rds
+}
+
+func (c *ConfigCtx) AppendEDS(eds string) {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	c.eds = append(c.eds, eds)
+}
+
+func (c *ConfigCtx) AppendRDS(rds string) {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	c.rds = append(c.rds, rds)
+}
+
+func (c *ConfigCtx) RegisterComponents(name string, d json.RawMessage) (string, error) {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	n, d, err := MarshalName(name, d)
+	if err != nil {
+		return "", err
+	}
+
+	if c.componentMap == nil {
+		c.componentMap = map[string]json.RawMessage{}
+	}
+	c.componentMap[n] = d
+	return n, nil
+}
+
+func (c *ConfigCtx) RegisterService(name string) error {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	for _, services := range c.services {
+		if services == name {
+			return nil
+		}
+	}
+	c.services = append(c.services, name)
+	return nil
+}
+
+func (c *ConfigCtx) RegisterInit(d json.RawMessage) (string, error) {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	c.init = append(c.init, d)
+	return "", nil
 }
 
 func MarshalKind(kind string, i interface{}) (json.RawMessage, error) {
@@ -91,30 +194,8 @@ func MarshalRef(ref string) (json.RawMessage, error) {
 	return []byte(fmt.Sprintf(`{"@Ref":%q}`, ref)), nil
 }
 
-func (c *ConfigCtx) RegisterComponents(name string, d json.RawMessage) (string, error) {
-	n, d, err := MarshalName(name, d)
-	if err != nil {
-		return "", err
+func NewConfigCtx(ctx context.Context) *ConfigCtx {
+	return &ConfigCtx{
+		ctx: ctx,
 	}
-
-	if c.ComponentMap == nil {
-		c.ComponentMap = map[string]json.RawMessage{}
-	}
-	c.ComponentMap[n] = d
-	return n, nil
-}
-
-func (c *ConfigCtx) RegisterService(name string) error {
-	for _, services := range c.Services {
-		if services == name {
-			return nil
-		}
-	}
-	c.Services = append(c.Services, name)
-	return nil
-}
-
-func (c *ConfigCtx) RegisterInit(d json.RawMessage) (string, error) {
-	c.Init = append(c.Init, d)
-	return "", nil
 }

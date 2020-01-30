@@ -13,7 +13,7 @@ func Convert_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (string, e
 	switch c.GetType() {
 	case envoy_api_v2.Cluster_EDS:
 		if c.Name != "" {
-			conf.EDS = append(conf.EDS, c.Name)
+			conf.AppendEDS(c.Name)
 		}
 		return "", nil
 	case envoy_api_v2.Cluster_STATIC:

@@ -20,7 +20,7 @@ func GetNodeWithContext(ctx context.Context) (*envoy_api_v2_core.Node, bool) {
 
 func Convert_Node(conf *config.ConfigCtx, c *envoy_api_v2_core.Node) (string, error) {
 	if c != nil {
-		conf.Ctx = context.WithValue(conf.Ctx, nodeCtxKeyType(0), c)
+		conf.WithValue(nodeCtxKeyType(0), c)
 	}
 	return "", nil
 }
