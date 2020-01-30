@@ -42,14 +42,17 @@ func run(pkg string) {
 	for i := 0; i != num; i++ {
 		child := typ.Child(i)
 		name := child.Name()
-		if 'A' > name[0] || 'Z' < name[0] || strings.HasSuffix(name, "ValidationError") || child.Kind() != gotype.Struct {
+		path := filepath.Join(strings.TrimPrefix(pkg, "github.com/envoyproxy/go-control-plane/envoy/"), "convert_"+strings.ToLower(name)+".go")
+
+		if 'A' > name[0] || 'Z' < name[0] || strings.Contains(name, "DeprecatedV1") || strings.HasSuffix(name, "ValidationError") || child.Kind() != gotype.Struct || child.NumField() <= 3 {
 			continue
 		}
-		generateFile(name, ppp, pkg)
+
+		generateFile(name, ppp, pkg, path)
 	}
 }
 
-func generateFile(name, pkg, imp string) error {
+func generateFile(name, pkg, imp, path string) error {
 	var buf bytes.Buffer
 	fmt.Fprintf(&buf, `
 
@@ -68,13 +71,10 @@ func Convert_%s(conf *config.ConfigCtx, c *%s.%s) (string, error) {
 
 `, strings.TrimPrefix(pkg, "envoy_"), pkg, imp, name, pkg, name)
 
-	dir := strings.TrimPrefix(imp, "github.com/envoyproxy/go-control-plane/envoy/")
-	err := os.MkdirAll(dir, 0755)
+	err := os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
 		return err
 	}
-
-	path := filepath.Join(dir, "convert_"+strings.ToLower(name)+".go")
 
 	d, err := os.Stat(path)
 	if err == nil {
