@@ -9,15 +9,12 @@ import (
 	"time"
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/wzshiming/envoy/ads"
 	"github.com/wzshiming/envoy/config"
 	convert_api_v2 "github.com/wzshiming/envoy/convert/api/v2"
 	"github.com/wzshiming/envoy/internal/logger"
 	"github.com/wzshiming/pipe"
 )
-
-var marshal = &jsonpb.Marshaler{OrigName: true, Indent: "  "}
 
 type ADS struct {
 	ads  *ads.Client
@@ -195,14 +192,11 @@ func (a *ADS) handleRDS(rds []*envoy_api_v2.RouteConfiguration) {
 }
 
 func (a *ADS) reload() error {
-	//pipeConfig, _ := json.MarshalIndent(a.conf, "", " ")
-	//
-	//logger.Info(string(pipeConfig))
-
-	conf, err := json.Marshal(a.conf)
+	conf, err := json.MarshalIndent(a.conf, "", "  ")
 	if err != nil {
 		return err
 	}
+	logger.Info("reload \n", string(conf))
 	p, ok := pipe.GetPipeWithContext(a.ctx)
 	if !ok {
 		return fmt.Errorf("not get pipe")

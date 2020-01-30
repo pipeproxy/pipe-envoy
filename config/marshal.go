@@ -14,8 +14,26 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-var unmarshaler = jsonpb.Unmarshaler{
-	AnyResolver: ResolveFunc(defaultResolveAny),
+var (
+	marshaler   = &jsonpb.Marshaler{OrigName: true, Indent: "  "}
+	unmarshaler = jsonpb.Unmarshaler{
+		AnyResolver: ResolveFunc(defaultResolveAny),
+	}
+)
+
+func Marshal(pb proto.Message) ([]byte, error) {
+	buf := bytes.NewBuffer(nil)
+	err := marshaler.Marshal(buf, pb)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func Unmarshal(data []byte, pb proto.Message) error {
+	dec := json.NewDecoder(bytes.NewBuffer(data))
+	dec.DisallowUnknownFields()
+	return unmarshaler.UnmarshalNext(dec, pb)
 }
 
 func UnmarshalAny(a *any.Any) (proto.Message, error) {
@@ -38,10 +56,7 @@ func UnmarshalBootstrap(config []byte) (*envoy_config_bootstrap_v2.Bootstrap, er
 
 	bootstrap := &envoy_config_bootstrap_v2.Bootstrap{}
 
-	dec := json.NewDecoder(bytes.NewBuffer(config))
-	dec.DisallowUnknownFields()
-
-	err = unmarshaler.UnmarshalNext(dec, bootstrap)
+	err = Unmarshal(config, bootstrap)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +64,7 @@ func UnmarshalBootstrap(config []byte) (*envoy_config_bootstrap_v2.Bootstrap, er
 }
 
 func MarshalBootstrap(bootstrap *envoy_config_bootstrap_v2.Bootstrap) ([]byte, error) {
-	config, err := json.Marshal(bootstrap)
+	config, err := Marshal(bootstrap)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +79,6 @@ func (r ResolveFunc) Resolve(typeUrl string) (proto.Message, error) {
 }
 
 func defaultResolveAny(typeUrl string) (proto.Message, error) {
-
 	// Only the part of typeUrl after the last slash is relevant.
 	mname := typeUrl
 	if slash := strings.LastIndex(mname, "/"); slash >= 0 {
