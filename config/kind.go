@@ -31,13 +31,14 @@ const (
 	KindHttpHandlerRemoveResponseHeader = kindHttpHandler + "@remove_response_header"
 	KindHttpHandlerRemoveRequestHeader  = kindHttpHandler + "@remove_request_header"
 	KindHttpHandlerMulti                = kindHttpHandler + "@multi"
+	KindHttpHandlerAccessLog            = kindHttpHandler + "@access_log"
 	KindOutputFile                      = kindOutput + "@file"
-
-	KindServiceServer       = kindService + "@server"
-	KindServiceMulti        = kindService + "@multi"
-	KindListenConfigNetwork = kindListenConfig + "@network"
-	KindOnceADS             = kindOnce + "@ads"
-	KindOnceXDS             = kindOnce + "@xds"
+	KindServiceServer                   = kindService + "@server"
+	KindServiceMulti                    = kindService + "@multi"
+	KindListenConfigNetwork             = kindListenConfig + "@network"
+	KindOnceADS                         = kindOnce + "@ads"
+	KindOnceXDS                         = kindOnce + "@xds"
+	KindOnceAccessLog                   = kindOnce + "@access_log"
 )
 
 func XdsName(name string) string {
@@ -45,6 +46,28 @@ func XdsName(name string) string {
 		return ""
 	}
 	return "xds@" + name
+}
+
+func MarshalKindHttpHandlerAccessLog(accessLog, handler json.RawMessage) (json.RawMessage, error) {
+	return MarshalKind(KindHttpHandlerAccessLog, struct {
+		AccessLog json.RawMessage
+		Handler   json.RawMessage
+	}{
+		AccessLog: accessLog,
+		Handler:   handler,
+	})
+}
+
+func MarshalKindOnceAccessLog(nodeID, logName string, forward json.RawMessage) (json.RawMessage, error) {
+	return MarshalKind(KindOnceAccessLog, struct {
+		NodeID  string
+		LogName string
+		Forward json.RawMessage
+	}{
+		NodeID:  nodeID,
+		LogName: logName,
+		Forward: forward,
+	})
 }
 
 func MarshalKindHttpHandlerMulti(multi []json.RawMessage) (json.RawMessage, error) {
