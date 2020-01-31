@@ -7,6 +7,12 @@ import (
 )
 
 func Convert_api_v2_core_GrpcService(conf *config.ConfigCtx, c *envoy_api_v2_core.GrpcService) (string, error) {
+	switch t := c.TargetSpecifier.(type) {
+	case *envoy_api_v2_core.GrpcService_EnvoyGrpc_:
+		clusterName := t.EnvoyGrpc.ClusterName
+		return config.XdsName(clusterName), nil
+	case *envoy_api_v2_core.GrpcService_GoogleGrpc_:
+	}
 	logger.Todof("%#v", c)
 	return "", nil
 }

@@ -11,28 +11,24 @@ func Convert_api_v2_core_ApiConfigSource(conf *config.ConfigCtx, c *envoy_api_v2
 	case envoy_api_v2_core.ApiConfigSource_GRPC:
 		if len(c.GrpcServices) == 1 {
 			svc := c.GrpcServices[0]
-			switch t := svc.TargetSpecifier.(type) {
-			case *envoy_api_v2_core.GrpcService_EnvoyGrpc_:
-				clusterName := t.EnvoyGrpc.ClusterName
-				ref := config.XdsName(clusterName)
-				r, err := config.MarshalRef(ref)
-				if err != nil {
-					return "", err
-				}
-
-				nodeID := ""
-				node, ok := GetNodeWithContext(conf.Ctx())
-				if ok {
-					nodeID = node.Id
-				}
-
-				r, err = config.MarshalKindOnceADS(nodeID, r)
-				if err != nil {
-					return "", err
-				}
-				return conf.RegisterComponents("", r)
-			case *envoy_api_v2_core.GrpcService_GoogleGrpc_:
+			ref, err := Convert_api_v2_core_GrpcService(conf, svc)
+			if err != nil {
+				return "", err
 			}
+			r, err := config.MarshalRef(ref)
+			if err != nil {
+				return "", err
+			}
+			nodeID := ""
+			node, ok := GetNodeWithContext(conf.Ctx())
+			if ok {
+				nodeID = node.Id
+			}
+			r, err = config.MarshalKindOnceADS(nodeID, r)
+			if err != nil {
+				return "", err
+			}
+			return conf.RegisterComponents("", r)
 		}
 	}
 	logger.Todof("%#v", c)

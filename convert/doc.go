@@ -11,8 +11,8 @@ package convert
 //go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/api/v2/listener
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/api/v2/ratelimit
 //go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/api/v2/route
-////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2
-////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3alpha
+//go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/access_log/v2
+////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/access_log/v3alpha
 //go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3alpha
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/cluster/aggregate/v2alpha
@@ -23,7 +23,7 @@ package convert
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/common/tap/v2alpha
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/core/v3alpha
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3alpha
-////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2
+//go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/filter/access_log/v2
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/filter/dubbo/router/v2alpha1
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/filter/http/adaptive_concurrency/v2alpha
@@ -101,8 +101,8 @@ package convert
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/transport_socket/alts/v2alpha
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/transport_socket/raw_buffer/v2
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/config/transport_socket/tap/v2alpha
-////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2
-////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3alpha
+////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/data/access_log/v2
+////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/data/access_log/v3alpha
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/data/cluster/v2alpha
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/data/core/v2alpha
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/data/core/v3alpha
@@ -170,8 +170,8 @@ package convert
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3alpha
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tap/v3alpha
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3alpha
-////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2
-////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3alpha
+////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/service/access_log/v2
+////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/service/access_log/v3alpha
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/service/auth/v2
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/service/auth/v2alpha
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/service/auth/v3alpha

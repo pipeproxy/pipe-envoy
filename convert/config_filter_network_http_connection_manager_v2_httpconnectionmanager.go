@@ -31,6 +31,17 @@ func Convert_config_filter_network_http_connection_manager_v2_HttpConnectionMana
 		return "", err
 	}
 
+	for _, accessLog := range c.AccessLog {
+		name, err := Convert_config_filter_accesslog_v2_AccessLog(conf, accessLog, ref)
+		if err != nil {
+			return "", err
+		}
+		ref, err = config.MarshalRef(name)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	d, err := config.MarshalKindStreamHandlerHTTP(ref, nil)
 	if err != nil {
 		return "", err
