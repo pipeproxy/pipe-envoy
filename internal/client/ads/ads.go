@@ -13,30 +13,14 @@ import (
 	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/golang/protobuf/proto"
-	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/wzshiming/envoy/internal/node"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
 
 // Config for the Client connection.
 type Config struct {
-	NodeID string
-
-	// Namespace defaults to 'default'
-	Namespace string
-
-	// Workload defaults to 'test'
-	Workload string
-
-	// NodeType defaults to sidecar. "ingress" and "router" are also supported.
-	NodeType string
-
-	// IP is currently the primary key used to locate inbound configs. It is sent by client,
-	// must match a known endpoint IP. Tests can use a ServiceEntry to register fake IPs.
-	IP string
-
-	// Metadate includes additional metadata for the node
-	Metadate *structpb.Struct
+	NodeConfig *node.Config
 
 	ContextDialer func(context.Context, string) (net.Conn, error)
 
@@ -48,18 +32,13 @@ type Config struct {
 
 // Client implements a client for ADS.
 type Client struct {
-	stream envoy_service_discovery_v2.AggregatedDiscoveryService_StreamAggregatedResourcesClient
-
-	conn *grpc.ClientConn
-
-	nodeID string
+	stream        envoy_service_discovery_v2.AggregatedDiscoveryService_StreamAggregatedResourcesClient
+	conn          *grpc.ClientConn
+	nodeConfig    *node.Config
+	contextDialer func(context.Context, string) (net.Conn, error)
 
 	certDir string
 	url     string
-
-	metadata *structpb.Struct
-
-	ContextDialer func(context.Context, string) (net.Conn, error)
 
 	HandleCDS func([]*envoy_api_v2.Cluster)
 	HandleRDS func([]*envoy_api_v2.RouteConfiguration)
@@ -88,8 +67,8 @@ const (
 	AnyType = ""
 )
 
-// Dial connects to a Client server, with optional TLS authentication if a cert dir is specified.
-func Dial(url string, certDir string, opts *Config) (*Client, error) {
+// NewClient connects to a Client server, with optional TLS authentication if a cert dir is specified.
+func NewClient(url string, certDir string, opts *Config) (*Client, error) {
 	ads := &Client{
 		certDir: certDir,
 		url:     url,
@@ -98,53 +77,14 @@ func Dial(url string, certDir string, opts *Config) (*Client, error) {
 		opts = &Config{}
 	}
 
-	if opts.NodeID != "" {
-		ads.nodeID = opts.NodeID
-	} else {
-		if opts.Namespace == "" {
-			opts.Namespace = "default"
-		}
-		if opts.NodeType == "" {
-			opts.NodeType = "sidecar"
-		}
-		if opts.IP == "" {
-			opts.IP = getPrivateIPIfAvailable().String()
-		}
-		if opts.Workload == "" {
-			opts.Workload = "test-1"
-		}
-		ads.nodeID = fmt.Sprintf("%s~%s~%s.%s~%s.svc.cluster.local", opts.NodeType, opts.IP,
-			opts.Workload, opts.Namespace, opts.Namespace)
-	}
-
-	ads.metadata = opts.Metadate
-	ads.ContextDialer = opts.ContextDialer
+	ads.nodeConfig = opts.NodeConfig
+	ads.contextDialer = opts.ContextDialer
 	ads.HandleCDS = opts.HandleCDS
 	ads.HandleRDS = opts.HandleRDS
 	ads.HandleLDS = opts.HandleLDS
 	ads.HandleEDS = opts.HandleEDS
 
 	return ads, nil
-}
-
-// Returns a private IP core, or unspecified IP (0.0.0.0) if no IP is available
-func getPrivateIPIfAvailable() net.IP {
-	addrs, _ := net.InterfaceAddrs()
-	for _, addr := range addrs {
-		var ip net.IP
-		switch v := addr.(type) {
-		case *net.IPNet:
-			ip = v.IP
-		case *net.IPAddr:
-			ip = v.IP
-		default:
-			continue
-		}
-		if !ip.IsLoopback() {
-			return ip
-		}
-	}
-	return net.IPv4zero
 }
 
 func tlsConfig(certDir string) (*tls.Config, error) {
@@ -174,35 +114,35 @@ func tlsConfig(certDir string) (*tls.Config, error) {
 }
 
 // Close the once.
-func (a *Client) Close() error {
-	if a.stream != nil {
-		a.stream.CloseSend()
+func (c *Client) Close() error {
+	if c.stream != nil {
+		c.stream.CloseSend()
 	}
-	return a.conn.Close()
+	return c.conn.Close()
 }
 
 // Run the ADS client.
-func (a *Client) Run() error {
-	err := a.run()
+func (c *Client) Run() error {
+	err := c.run()
 	if err != nil {
 		return err
 	}
-	return a.handleRecv()
+	return c.handleRecv()
 }
 
-func (a *Client) Start() error {
-	err := a.run()
+func (c *Client) Start() error {
+	err := c.run()
 	if err != nil {
 		return err
 	}
-	go a.handleRecv()
+	go c.handleRecv()
 	return nil
 }
 
-func (a *Client) run() error {
+func (c *Client) run() error {
 	opts := []grpc.DialOption{}
-	if len(a.certDir) != 0 {
-		tlsCfg, err := tlsConfig(a.certDir)
+	if len(c.certDir) != 0 {
+		tlsCfg, err := tlsConfig(c.certDir)
 		if err != nil {
 			return err
 		}
@@ -211,28 +151,28 @@ func (a *Client) run() error {
 	} else {
 		opts = append(opts, grpc.WithInsecure())
 	}
-	if a.ContextDialer != nil {
-		opts = append(opts, grpc.WithContextDialer(a.ContextDialer))
+	if c.contextDialer != nil {
+		opts = append(opts, grpc.WithContextDialer(c.contextDialer))
 	}
-	conn, err := grpc.Dial(a.url, opts...)
+	conn, err := grpc.Dial(c.url, opts...)
 	if err != nil {
 		return err
 	}
-	a.conn = conn
-	xds := envoy_service_discovery_v2.NewAggregatedDiscoveryServiceClient(a.conn)
+	c.conn = conn
+	xds := envoy_service_discovery_v2.NewAggregatedDiscoveryServiceClient(c.conn)
 	edsstr, err := xds.StreamAggregatedResources(context.Background())
 	if err != nil {
 		return err
 	}
-	a.stream = edsstr
+	c.stream = edsstr
 	return nil
 }
 
-func (a *Client) handleRecv() error {
+func (c *Client) handleRecv() error {
 	for {
-		msg, err := a.stream.Recv()
+		msg, err := c.stream.Recv()
 		if err != nil {
-			return fmt.Errorf("connection closed %s: error: %w", a.nodeID, err)
+			return fmt.Errorf("connection closed : error: %w", err)
 		}
 		// logger.Info(msg.TypeUrl)
 		lds := []*envoy_api_v2.Listener{}
@@ -261,70 +201,66 @@ func (a *Client) handleRecv() error {
 			}
 		}
 
-		a.ack(msg)
+		c.ack(msg)
 
 		if len(cds) != 0 {
-			a.handleCDS(cds)
+			c.handleCDS(cds)
 		}
 		if len(eds) != 0 {
-			a.handleEDS(eds)
+			c.handleEDS(eds)
 		}
 		if len(lds) != 0 {
-			a.handleLDS(lds)
+			c.handleLDS(lds)
 		}
 		if len(rds) != 0 {
-			a.handleRDS(rds)
+			c.handleRDS(rds)
 		}
 	}
 }
 
-func (a *Client) handleCDS(cds []*envoy_api_v2.Cluster) {
-	if a.HandleCDS != nil {
-		a.HandleCDS(cds)
+func (c *Client) handleCDS(cds []*envoy_api_v2.Cluster) {
+	if c.HandleCDS != nil {
+		c.HandleCDS(cds)
 	}
 }
 
-func (a *Client) handleEDS(eds []*envoy_api_v2.ClusterLoadAssignment) {
-	if a.HandleEDS != nil {
-		a.HandleEDS(eds)
+func (c *Client) handleEDS(eds []*envoy_api_v2.ClusterLoadAssignment) {
+	if c.HandleEDS != nil {
+		c.HandleEDS(eds)
 	}
 }
 
-func (a *Client) handleLDS(lds []*envoy_api_v2.Listener) {
-	if a.HandleLDS != nil {
-		a.HandleLDS(lds)
+func (c *Client) handleLDS(lds []*envoy_api_v2.Listener) {
+	if c.HandleLDS != nil {
+		c.HandleLDS(lds)
 	}
 }
 
-func (a *Client) handleRDS(rds []*envoy_api_v2.RouteConfiguration) {
-	if a.HandleRDS != nil {
-		a.HandleRDS(rds)
+func (c *Client) handleRDS(rds []*envoy_api_v2.RouteConfiguration) {
+	if c.HandleRDS != nil {
+		c.HandleRDS(rds)
 	}
 }
 
-func (a *Client) node() *envoy_api_v2_core.Node {
-	n := &envoy_api_v2_core.Node{
-		Id:       a.nodeID,
-		Metadata: a.metadata,
-	}
-	return n
+func (c *Client) Node() *envoy_api_v2_core.Node {
+	return c.nodeConfig.Node()
 }
 
-func (a *Client) Send(req *envoy_api_v2.DiscoveryRequest) error {
-	req.Node = a.node()
-	return a.stream.Send(req)
+func (c *Client) Send(req *envoy_api_v2.DiscoveryRequest) error {
+	req.Node = c.Node()
+	return c.stream.Send(req)
 }
 
-func (a *Client) SendRsc(typeurl string, rsc []string) error {
-	return a.Send(&envoy_api_v2.DiscoveryRequest{
+func (c *Client) SendRsc(typeurl string, rsc []string) error {
+	return c.Send(&envoy_api_v2.DiscoveryRequest{
 		ResponseNonce: "",
 		TypeUrl:       typeurl,
 		ResourceNames: rsc,
 	})
 }
 
-func (a *Client) ack(msg *envoy_api_v2.DiscoveryResponse) error {
-	return a.Send(&envoy_api_v2.DiscoveryRequest{
+func (c *Client) ack(msg *envoy_api_v2.DiscoveryResponse) error {
+	return c.Send(&envoy_api_v2.DiscoveryRequest{
 		ResponseNonce: msg.Nonce,
 		TypeUrl:       msg.TypeUrl,
 		VersionInfo:   msg.VersionInfo,

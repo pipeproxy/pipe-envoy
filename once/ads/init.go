@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/wzshiming/envoy/ads"
 	"github.com/wzshiming/envoy/config"
+	"github.com/wzshiming/envoy/internal/client/ads"
+	"github.com/wzshiming/envoy/internal/node"
 	"github.com/wzshiming/pipe/configure"
 	"github.com/wzshiming/pipe/once"
 	"github.com/wzshiming/pipe/stream"
@@ -34,7 +35,9 @@ func NewADSWithConfig(ctx context.Context, conf *Config) (once.Once, error) {
 	}
 
 	adsConfig := ads.Config{
-		NodeID: conf.NodeID,
+		NodeConfig: &node.Config{
+			NodeID: conf.NodeID,
+		},
 		ContextDialer: func(ctx context.Context, s string) (conn net.Conn, err error) {
 			p1, p2 := net.Pipe()
 			go conf.Forward.ServeStream(ctx, p1)

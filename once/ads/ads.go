@@ -9,9 +9,9 @@ import (
 	"time"
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/wzshiming/envoy/ads"
 	"github.com/wzshiming/envoy/config"
 	"github.com/wzshiming/envoy/convert"
+	"github.com/wzshiming/envoy/internal/client/ads"
 	"github.com/wzshiming/envoy/internal/logger"
 	"github.com/wzshiming/pipe"
 )
@@ -39,7 +39,7 @@ func NewADS(conf *config.ConfigCtx, adsConfig *ads.Config) (*ADS, error) {
 	adsConfig.HandleLDS = a.handleLDS
 	adsConfig.HandleEDS = a.handleEDS
 
-	cli, err := ads.Dial("", "", adsConfig)
+	cli, err := ads.NewClient("", "", adsConfig)
 	if err != nil {
 		return nil, err
 	}
