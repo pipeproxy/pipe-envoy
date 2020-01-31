@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"github.com/wzshiming/envoy/config"
-	convert_config_bootstrap_v2 "github.com/wzshiming/envoy/convert/config/bootstrap/v2"
+	"github.com/wzshiming/envoy/convert"
 	_ "github.com/wzshiming/envoy/init"
 	"github.com/wzshiming/envoy/internal/logger"
 	"github.com/wzshiming/pipe"
@@ -60,7 +60,7 @@ func convertXDS(ctx context.Context, data []byte) (context.Context, []byte, erro
 
 	c := config.NewConfigCtx(ctx)
 
-	_, err = convert_config_bootstrap_v2.Convert_Bootstrap(c, conf)
+	_, err = convert.Convert_config_bootstrap_v2_Bootstrap(c, conf)
 	if err != nil {
 		return nil, nil, err
 	}

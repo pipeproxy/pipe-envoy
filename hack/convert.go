@@ -26,37 +26,40 @@ func main() {
 	}
 }
 
-func run(pkg string) {
+func run(imp string) {
 
-	imp := gotype.NewImporter()
+	impprter := gotype.NewImporter()
 
-	typ, err := imp.Import(pkg, "")
+	typ, err := impprter.Import(imp, "")
 	if err != nil {
 		logger.Fatal(err)
 	}
 
 	num := typ.NumChild()
-	ppp := typ.Name()
-	logger.Info(pkg, " ", num)
+	pkg := typ.Name()
+	logger.Info(imp, " ", num)
 
 	for i := 0; i != num; i++ {
 		child := typ.Child(i)
 		name := child.Name()
-		path := filepath.Join(strings.TrimPrefix(pkg, "github.com/envoyproxy/go-control-plane/envoy/"), "convert_"+strings.ToLower(name)+".go")
 
 		if 'A' > name[0] || 'Z' < name[0] || strings.Contains(name, "DeprecatedV1") || strings.HasSuffix(name, "ValidationError") || child.Kind() != gotype.Struct || child.NumField() <= 3 {
 			continue
 		}
 
-		generateFile(name, ppp, pkg, path)
+		path := filepath.Join(strings.TrimPrefix(imp, "github.com/envoyproxy/go-control-plane/envoy/"), strings.ToLower(name)+".go")
+		path = strings.ReplaceAll(path, "/", "_")
+
+		generateFile(name, pkg, imp, path)
 	}
 }
 
 func generateFile(name, pkg, imp, path string) error {
 	var buf bytes.Buffer
+
 	fmt.Fprintf(&buf, `
 
-package convert_%s
+package convert
 
 import (
     %s %q
@@ -64,12 +67,12 @@ import (
     "github.com/wzshiming/envoy/internal/logger"
 )
 
-func Convert_%s(conf *config.ConfigCtx, c *%s.%s) (string, error) {
+func Convert_%s_%s(conf *config.ConfigCtx, c *%s.%s) (string, error) {
     logger.Todof("%%#v", c)
 	return "", nil
 }
 
-`, strings.TrimPrefix(pkg, "envoy_"), pkg, imp, name, pkg, name)
+`, pkg, imp, strings.TrimPrefix(pkg, "envoy_"), name, pkg, name)
 
 	err := os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {

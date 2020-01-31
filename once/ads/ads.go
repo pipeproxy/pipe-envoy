@@ -11,7 +11,7 @@ import (
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/wzshiming/envoy/ads"
 	"github.com/wzshiming/envoy/config"
-	convert_api_v2 "github.com/wzshiming/envoy/convert/api/v2"
+	"github.com/wzshiming/envoy/convert"
 	"github.com/wzshiming/envoy/internal/logger"
 	"github.com/wzshiming/pipe"
 )
@@ -124,7 +124,7 @@ func (a *ADS) keepRsc() {
 
 func (a *ADS) handleCDS(cds []*envoy_api_v2.Cluster) {
 	for _, cluster := range cds {
-		name, err := convert_api_v2.Convert_Cluster(a.conf, cluster)
+		name, err := convert.Convert_api_v2_Cluster(a.conf, cluster)
 		if err != nil {
 			logger.Error(err)
 		}
@@ -141,7 +141,7 @@ func (a *ADS) handleCDS(cds []*envoy_api_v2.Cluster) {
 
 func (a *ADS) handleEDS(eds []*envoy_api_v2.ClusterLoadAssignment) {
 	for _, endpoint := range eds {
-		name, err := convert_api_v2.Convert_ClusterLoadAssignment(a.conf, endpoint)
+		name, err := convert.Convert_api_v2_ClusterLoadAssignment(a.conf, endpoint)
 		if err != nil {
 			logger.Error(err)
 		}
@@ -154,7 +154,7 @@ func (a *ADS) handleEDS(eds []*envoy_api_v2.ClusterLoadAssignment) {
 func (a *ADS) handleLDS(lds []*envoy_api_v2.Listener) {
 	for _, listener := range lds {
 
-		name, err := convert_api_v2.Convert_Listener(a.conf, listener)
+		name, err := convert.Convert_api_v2_Listener(a.conf, listener)
 		if err != nil {
 			logger.Error(err)
 			return
@@ -179,7 +179,7 @@ func (a *ADS) handleLDS(lds []*envoy_api_v2.Listener) {
 func (a *ADS) handleRDS(rds []*envoy_api_v2.RouteConfiguration) {
 	for _, route := range rds {
 
-		name, err := convert_api_v2.Convert_RouteConfiguration(a.conf, route)
+		name, err := convert.Convert_api_v2_RouteConfiguration(a.conf, route)
 		if err != nil {
 			logger.Error(err)
 			return
