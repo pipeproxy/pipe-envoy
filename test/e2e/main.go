@@ -31,7 +31,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/envoyproxy/go-control-plane/pkg/server"
 	"github.com/envoyproxy/go-control-plane/pkg/test"
-	"github.com/envoyproxy/go-control-plane/pkg/test/resource"
+	"github.com/wzshiming/envoy/test/resource"
 )
 
 var (

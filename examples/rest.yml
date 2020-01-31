@@ -29,3 +29,9 @@ static_resources:
             address: 127.0.0.1
             port_value: 18001
       name: xds_cluster
+    - connect_timeout: 1s
+      hosts:
+        - socket_address:
+            address: 127.0.0.1
+            port_value: 18090
+      name: access_log_cluster
