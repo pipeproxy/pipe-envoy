@@ -6,7 +6,7 @@ import (
 	"net"
 
 	"github.com/wzshiming/envoy/ads"
-	"github.com/wzshiming/envoy/convert"
+	"github.com/wzshiming/envoy/config"
 	"github.com/wzshiming/pipe/configure"
 	"github.com/wzshiming/pipe/once"
 	"github.com/wzshiming/pipe/stream"
@@ -42,7 +42,7 @@ func NewADSWithConfig(ctx context.Context, conf *Config) (once.Once, error) {
 		},
 	}
 
-	config, ok := convert.GetXdsWithContext(ctx)
+	config, ok := config.GetXdsWithContext(ctx)
 	if !ok || config == nil {
 		return nil, fmt.Errorf("xds content is not configured")
 	}

@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"io/ioutil"
 
-	_ "github.com/wzshiming/envoy/init"
-
 	"github.com/spf13/pflag"
-	"github.com/wzshiming/envoy/convert"
+	"github.com/wzshiming/envoy/config"
+	convert_config_bootstrap_v2 "github.com/wzshiming/envoy/convert/config/bootstrap/v2"
+	_ "github.com/wzshiming/envoy/init"
 	"github.com/wzshiming/envoy/internal/logger"
 	"github.com/wzshiming/pipe"
 )
@@ -33,7 +34,7 @@ func main() {
 		logger.Fatalln(err)
 	}
 
-	ctx, conf, err := convert.ConvertXDS(context.Background(), data)
+	ctx, conf, err := convertXDS(context.Background(), data)
 	if err != nil {
 		logger.Fatalln(err)
 	}
@@ -49,4 +50,25 @@ func main() {
 	}
 
 	return
+}
+
+func convertXDS(ctx context.Context, data []byte) (context.Context, []byte, error) {
+	conf, err := config.UnmarshalBootstrap(data)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	c := config.NewConfigCtx(ctx)
+
+	_, err = convert_config_bootstrap_v2.Convert_Bootstrap(c, conf)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	pipeConfig, err := json.Marshal(c)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return c.Ctx(), pipeConfig, nil
 }

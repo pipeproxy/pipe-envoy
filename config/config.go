@@ -215,8 +215,22 @@ func MarshalRef(ref string) (json.RawMessage, error) {
 	return []byte(fmt.Sprintf(`{"@Ref":%q}`, ref)), nil
 }
 
+type xdsCtxKeyType int
+
+func GetXdsWithContext(ctx context.Context) (*ConfigCtx, bool) {
+	i := ctx.Value(xdsCtxKeyType(0))
+	if i == nil {
+		return nil, false
+	}
+	p, ok := i.(*ConfigCtx)
+	return p, ok
+}
+
 func NewConfigCtx(ctx context.Context) *ConfigCtx {
-	return &ConfigCtx{
+	c := &ConfigCtx{
 		ctx: ctx,
 	}
+	ctx = context.WithValue(ctx, xdsCtxKeyType(0), c)
+	c.ctx = ctx
+	return c
 }
