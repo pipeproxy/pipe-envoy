@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"context"
 	"crypto/md5"
 	"encoding/hex"
@@ -32,7 +33,7 @@ func (c *ConfigCtx) MarshalJSON() ([]byte, error) {
 
 	switch len(c.services) {
 	case 0:
-		conf.Pipe = []byte(`{"@Kind":"none"}`)
+		conf.Pipe = MustMarshalKind("none", nil)
 	case 1:
 
 		pipe, err := MarshalRef(c.services[0])
@@ -172,14 +173,26 @@ func (c *ConfigCtx) RegisterInit(d json.RawMessage) (string, error) {
 	return "", nil
 }
 
+func MustMarshalKind(kind string, i interface{}) json.RawMessage {
+	d, err := MarshalKind(kind, i)
+	if err != nil {
+		panic(err)
+	}
+	return d
+}
+
 func MarshalKind(kind string, i interface{}) (json.RawMessage, error) {
 	d, err := json.Marshal(i)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(d) > 2 && d[0] == '{' && d[1] != '}' {
-		d = append([]byte(fmt.Sprintf(`{"@Kind":%q,`, kind)), d[1:]...)
+	if bytes.Equal(d, []byte("null")) || bytes.Equal(d, []byte("{}")) {
+		return []byte(fmt.Sprintf(`{"@Kind":%q}`, kind)), nil
+	}
+
+	if len(d) > 2 && d[0] == '{' {
+		return append([]byte(fmt.Sprintf(`{"@Kind":%q,`, kind)), d[1:]...), nil
 	}
 
 	return d, nil

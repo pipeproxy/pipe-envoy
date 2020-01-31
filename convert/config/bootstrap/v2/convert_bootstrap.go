@@ -8,19 +8,33 @@ import (
 
 func Convert_Bootstrap(conf *config.ConfigCtx, c *envoy_config_bootstrap_v2.Bootstrap) (string, error) {
 
-	_, err := convert_api_v2_core.Convert_Node(conf, c.Node)
-	if err != nil {
-		return "", err
+	if c.Node != nil {
+		_, err := convert_api_v2_core.Convert_Node(conf, c.Node)
+		if err != nil {
+			return "", err
+		}
 	}
 
-	_, err = Convert_Bootstrap_StaticResources(conf, c.StaticResources)
-	if err != nil {
-		return "", err
+	if c.Admin != nil {
+		_, err := Convert_Admin(conf, c.Admin)
+		if err != nil {
+			return "", err
+		}
 	}
 
-	_, err = Convert_Bootstrap_DynamicResources(conf, c.DynamicResources)
-	if err != nil {
-		return "", err
+	if c.StaticResources != nil {
+		_, err := Convert_Bootstrap_StaticResources(conf, c.StaticResources)
+		if err != nil {
+			return "", err
+		}
 	}
+
+	if c.DynamicResources != nil {
+		_, err := Convert_Bootstrap_DynamicResources(conf, c.DynamicResources)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	return "", nil
 }
