@@ -32,15 +32,16 @@ func Convert_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (string, e
 		name := config.XdsName(c.Name)
 		return conf.RegisterComponents(name, d)
 	}
+
 	switch d := c.ClusterDiscoveryType.(type) {
 	case *envoy_api_v2.Cluster_Type:
 		switch d.Type {
 		case envoy_api_v2.Cluster_EDS:
-			if c.Name != "" {
-				conf.AppendEDS(c.Name)
+			name := c.Name
+			if name != "" {
+				conf.AppendEDS(name)
+				return config.XdsName(name), nil
 			}
-			return "", nil
-
 		}
 	case *envoy_api_v2.Cluster_ClusterType:
 	}

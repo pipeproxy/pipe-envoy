@@ -7,23 +7,26 @@ import (
 )
 
 func Convert_HttpConnectionManager(conf *config.ConfigCtx, c *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager) (string, error) {
-	name := ""
+	routeName := ""
 	switch r := c.RouteSpecifier.(type) {
 	case *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager_Rds:
-		name = r.Rds.RouteConfigName
-		if name != "" {
-			conf.AppendRDS(name)
+		name, err := Convert_Rds(conf, r.Rds)
+		if err != nil {
+			return "", err
 		}
-
+		routeName = name
 	case *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager_RouteConfig:
+		//name, err := convert_api_v2.Convert_RouteConfiguration(conf, r.RouteConfig)
+		//if err != nil {
+		//	return "", err
+		//}
+		//routeName = name
 		logger.Todof("%#v", c)
 		return "", nil
 	case *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager_ScopedRoutes:
 		logger.Todof("%#v", c)
 		return "", nil
 	}
-
-	routeName := config.XdsName(name)
 
 	ref, err := config.MarshalRef(routeName)
 	if err != nil {
@@ -35,6 +38,6 @@ func Convert_HttpConnectionManager(conf *config.ConfigCtx, c *envoy_config_filte
 		return "", err
 	}
 
-	name = config.XdsName(name + ".route")
+	name := routeName + ".route"
 	return conf.RegisterComponents(name, d)
 }
