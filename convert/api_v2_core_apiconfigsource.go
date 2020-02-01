@@ -6,6 +6,8 @@ import (
 	"github.com/wzshiming/envoy/internal/logger"
 )
 
+const AdsName = "ads@ads"
+
 func Convert_api_v2_core_ApiConfigSource(conf *config.ConfigCtx, c *envoy_api_v2_core.ApiConfigSource) (string, error) {
 	switch c.ApiType {
 	case envoy_api_v2_core.ApiConfigSource_GRPC:
@@ -28,7 +30,7 @@ func Convert_api_v2_core_ApiConfigSource(conf *config.ConfigCtx, c *envoy_api_v2
 			if err != nil {
 				return "", err
 			}
-			return conf.RegisterComponents("", r)
+			return conf.RegisterComponents(AdsName, r)
 		}
 	}
 	logger.Todof("%#v", c)

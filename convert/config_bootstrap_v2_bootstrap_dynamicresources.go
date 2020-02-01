@@ -6,14 +6,12 @@ import (
 )
 
 func Convert_config_bootstrap_v2_Bootstrap_DynamicResources(conf *config.ConfigCtx, c *envoy_config_bootstrap_v2.Bootstrap_DynamicResources) (string, error) {
-	adsName := ""
 
 	if c.AdsConfig != nil {
-		name, err := Convert_api_v2_core_ApiConfigSource(conf, c.AdsConfig)
+		_, err := Convert_api_v2_core_ApiConfigSource(conf, c.AdsConfig)
 		if err != nil {
 			return "", err
 		}
-		adsName = name
 	}
 
 	if c.CdsConfig != nil {
@@ -23,10 +21,6 @@ func Convert_config_bootstrap_v2_Bootstrap_DynamicResources(conf *config.ConfigC
 		}
 
 		if cdsName != "" {
-			if cdsName == config.KindOnceADS {
-				cdsName = adsName
-			}
-
 			cdsRef, err := config.MarshalRef(cdsName)
 			if err != nil {
 				return "", err
@@ -48,10 +42,6 @@ func Convert_config_bootstrap_v2_Bootstrap_DynamicResources(conf *config.ConfigC
 			return "", err
 		}
 		if ldsName != "" {
-			if ldsName == config.KindOnceADS {
-				ldsName = adsName
-			}
-
 			ldsRef, err := config.MarshalRef(ldsName)
 			if err != nil {
 				return "", err

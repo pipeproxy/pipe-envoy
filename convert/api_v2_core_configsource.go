@@ -12,7 +12,7 @@ func Convert_api_v2_core_ConfigSource(conf *config.ConfigCtx, c *envoy_api_v2_co
 	case *envoy_api_v2_core.ConfigSource_ApiConfigSource:
 		return Convert_api_v2_core_ApiConfigSource(conf, s.ApiConfigSource)
 	case *envoy_api_v2_core.ConfigSource_Ads:
-		return config.KindOnceADS, nil
+		return AdsName, nil
 	case *envoy_api_v2_core.ConfigSource_Self:
 	}
 
