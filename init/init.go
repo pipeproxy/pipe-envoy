@@ -8,4 +8,6 @@ import (
 	_ "github.com/wzshiming/envoy/once/ads"
 	_ "github.com/wzshiming/envoy/once/xds"
 	_ "github.com/wzshiming/envoy/service/none"
+	_ "github.com/wzshiming/envoy/tls/merge"
+	_ "github.com/wzshiming/envoy/tls/validation"
 )

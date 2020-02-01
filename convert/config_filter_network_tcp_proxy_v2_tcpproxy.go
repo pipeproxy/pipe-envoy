@@ -6,12 +6,30 @@ import (
 	"github.com/wzshiming/envoy/internal/logger"
 )
 
-func Convert_config_filter_network_tcp_proxy_v2_TcpProxy(conf *config.ConfigCtx, c *envoy_config_filter_network_tcp_proxy_v2.TcpProxy) (string, error) {
+func Convert_config_filter_network_tcp_proxy_v2_TcpProxy(conf *config.ConfigCtx, c *envoy_config_filter_network_tcp_proxy_v2.TcpProxy, tlsName string) (string, error) {
 	switch c.StatPrefix {
 	case "tcp":
 		switch s := c.ClusterSpecifier.(type) {
 		case *envoy_config_filter_network_tcp_proxy_v2.TcpProxy_Cluster:
-			return config.XdsName(s.Cluster), nil
+			if tlsName == "" {
+				return config.XdsName(s.Cluster), nil
+			}
+
+			tlsRef, err := config.MarshalRef(tlsName)
+			if err != nil {
+				return "", err
+			}
+
+			clusterRef, err := config.MarshalRef(config.XdsName(s.Cluster))
+			if err != nil {
+				return "", err
+			}
+			d, err := config.MarshalKindStreamHandlerTlsDown(tlsRef, clusterRef)
+			if err != nil {
+				return "", err
+			}
+
+			return conf.RegisterComponents("", d)
 		case *envoy_config_filter_network_tcp_proxy_v2.TcpProxy_WeightedClusters:
 		}
 	}

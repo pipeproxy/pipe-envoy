@@ -16,11 +16,14 @@ const (
 	kindTLS           = "github.com/wzshiming/pipe/tls.TLS"
 	kindOnce          = "github.com/wzshiming/pipe/once.Once"
 	kindOutput        = "io.WriteCloser"
+	kindInput         = "io.ReadCloser"
 
 	KindStreamHandlerForward            = kindStreamHandler + "@forward"
 	KindStreamHandlerHTTP               = kindStreamHandler + "@http"
 	KindStreamHandlerPoller             = kindStreamHandler + "@poller"
 	KindStreamHandlerMulti              = kindStreamHandler + "@multi"
+	KindStreamHandlerTlsUp              = kindStreamHandler + "@tls_up"
+	KindStreamHandlerTlsDown            = kindStreamHandler + "@tls_down"
 	KindHttpHandlerForward              = kindHttpHandler + "@forward"
 	KindHttpHandlerPoller               = kindHttpHandler + "@poller"
 	KindHttpHandlerMux                  = kindHttpHandler + "@mux"
@@ -33,6 +36,11 @@ const (
 	KindHttpHandlerMulti                = kindHttpHandler + "@multi"
 	KindHttpHandlerAccessLog            = kindHttpHandler + "@access_log"
 	KindOutputFile                      = kindOutput + "@file"
+	KindInputFile                       = kindInput + "@file"
+	KindInputInline                     = kindInput + "@inline"
+	KindTlsMerge                        = kindTLS + "@merge"
+	KindTlsFrom                         = kindTLS + "@from"
+	KindTlsValidation                   = kindTLS + "@validation"
 	KindServiceServer                   = kindService + "@server"
 	KindServiceMulti                    = kindService + "@multi"
 	KindListenConfigNetwork             = kindListenConfig + "@network"
@@ -46,6 +54,54 @@ func XdsName(name string) string {
 		return ""
 	}
 	return "xds@" + name
+}
+
+func MarshalKindTlsMergep(merge []json.RawMessage) (json.RawMessage, error) {
+	return MarshalKind(KindTlsMerge, struct {
+		Merge []json.RawMessage
+	}{
+		Merge: merge,
+	})
+}
+
+func MarshalKindStreamHandlerTlsUp(tls, handler json.RawMessage) (json.RawMessage, error) {
+	return MarshalKind(KindStreamHandlerTlsUp, struct {
+		TLS     json.RawMessage
+		Handler json.RawMessage
+	}{
+		TLS:     tls,
+		Handler: handler,
+	})
+}
+
+func MarshalKindStreamHandlerTlsDown(tls, handler json.RawMessage) (json.RawMessage, error) {
+	return MarshalKind(KindStreamHandlerTlsDown, struct {
+		TLS     json.RawMessage
+		Handler json.RawMessage
+	}{
+		TLS:     tls,
+		Handler: handler,
+	})
+}
+
+func MarshalKindTlsValidation(ca json.RawMessage) (json.RawMessage, error) {
+	return MarshalKind(KindTlsValidation, struct {
+		Ca json.RawMessage
+	}{
+		Ca: ca,
+	})
+}
+
+func MarshalKindTlsFrom(domain string, cert, key json.RawMessage) (json.RawMessage, error) {
+	return MarshalKind(KindTlsFrom, struct {
+		Domain string
+		Cert   json.RawMessage
+		Key    json.RawMessage
+	}{
+		Domain: domain,
+		Cert:   cert,
+		Key:    key,
+	})
 }
 
 func MarshalKindHttpHandlerAccessLog(accessLog, handler json.RawMessage) (json.RawMessage, error) {
@@ -75,6 +131,22 @@ func MarshalKindHttpHandlerMulti(multi []json.RawMessage) (json.RawMessage, erro
 		Multi []json.RawMessage
 	}{
 		Multi: multi,
+	})
+}
+
+func MarshalKindInputInline(data string) (json.RawMessage, error) {
+	return MarshalKind(KindInputInline, struct {
+		Data string
+	}{
+		Data: data,
+	})
+}
+
+func MarshalKindInputFile(path string) (json.RawMessage, error) {
+	return MarshalKind(KindInputFile, struct {
+		Path string
+	}{
+		Path: path,
 	})
 }
 

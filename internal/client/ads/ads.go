@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_api_v2_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/golang/protobuf/proto"
@@ -28,6 +29,7 @@ type Config struct {
 	HandleRDS func([]*envoy_api_v2.RouteConfiguration)
 	HandleLDS func([]*envoy_api_v2.Listener)
 	HandleEDS func([]*envoy_api_v2.ClusterLoadAssignment)
+	HandleSDS func([]*envoy_api_v2_auth.Secret)
 }
 
 // Client implements a client for ADS.
@@ -44,6 +46,7 @@ type Client struct {
 	HandleRDS func([]*envoy_api_v2.RouteConfiguration)
 	HandleLDS func([]*envoy_api_v2.Listener)
 	HandleEDS func([]*envoy_api_v2.ClusterLoadAssignment)
+	HandleSDS func([]*envoy_api_v2_auth.Secret)
 }
 
 const (
@@ -83,6 +86,7 @@ func NewClient(url string, certDir string, opts *Config) (*Client, error) {
 	ads.HandleRDS = opts.HandleRDS
 	ads.HandleLDS = opts.HandleLDS
 	ads.HandleEDS = opts.HandleEDS
+	ads.HandleSDS = opts.HandleSDS
 
 	return ads, nil
 }
@@ -169,16 +173,23 @@ func (c *Client) run() error {
 }
 
 func (c *Client) handleRecv() error {
+	lds := []*envoy_api_v2.Listener{}
+	cds := []*envoy_api_v2.Cluster{}
+	rds := []*envoy_api_v2.RouteConfiguration{}
+	eds := []*envoy_api_v2.ClusterLoadAssignment{}
+	sds := []*envoy_api_v2_auth.Secret{}
 	for {
 		msg, err := c.stream.Recv()
 		if err != nil {
 			return fmt.Errorf("connection closed : error: %w", err)
 		}
-		// logger.Info(msg.TypeUrl)
-		lds := []*envoy_api_v2.Listener{}
-		cds := []*envoy_api_v2.Cluster{}
-		rds := []*envoy_api_v2.RouteConfiguration{}
-		eds := []*envoy_api_v2.ClusterLoadAssignment{}
+
+		lds = lds[:0]
+		cds = cds[:0]
+		rds = rds[:0]
+		eds = eds[:0]
+		sds = sds[:0]
+
 		for _, rsc := range msg.Resources {
 			valBytes := rsc.Value
 			switch rsc.TypeUrl {
@@ -198,6 +209,10 @@ func (c *Client) handleRecv() error {
 				ll := &envoy_api_v2.RouteConfiguration{}
 				_ = proto.Unmarshal(valBytes, ll)
 				rds = append(rds, ll)
+			case SecretType:
+				ll := &envoy_api_v2_auth.Secret{}
+				_ = proto.Unmarshal(valBytes, ll)
+				sds = append(sds, ll)
 			}
 		}
 
@@ -214,6 +229,9 @@ func (c *Client) handleRecv() error {
 		}
 		if len(rds) != 0 {
 			c.handleRDS(rds)
+		}
+		if len(sds) != 0 {
+			c.handleSDS(sds)
 		}
 	}
 }
@@ -239,6 +257,12 @@ func (c *Client) handleLDS(lds []*envoy_api_v2.Listener) {
 func (c *Client) handleRDS(rds []*envoy_api_v2.RouteConfiguration) {
 	if c.HandleRDS != nil {
 		c.HandleRDS(rds)
+	}
+}
+
+func (c *Client) handleSDS(sds []*envoy_api_v2_auth.Secret) {
+	if c.HandleSDS != nil {
+		c.HandleSDS(sds)
 	}
 }
 

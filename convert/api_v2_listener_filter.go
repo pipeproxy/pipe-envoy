@@ -14,7 +14,7 @@ import (
 	"github.com/wzshiming/envoy/config"
 )
 
-func Convert_api_v2_listener_Filter(conf *config.ConfigCtx, c *envoy_api_v2_listener.Filter) (string, error) {
+func Convert_api_v2_listener_Filter(conf *config.ConfigCtx, c *envoy_api_v2_listener.Filter, tlsName string) (string, error) {
 
 	var filterConfig proto.Message
 	switch t := c.ConfigType.(type) {
@@ -32,12 +32,12 @@ func Convert_api_v2_listener_Filter(conf *config.ConfigCtx, c *envoy_api_v2_list
 	case "envoy.http_connection_manager":
 		switch p := filterConfig.(type) {
 		case *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager:
-			return Convert_config_filter_network_http_connection_manager_v2_HttpConnectionManager(conf, p)
+			return Convert_config_filter_network_http_connection_manager_v2_HttpConnectionManager(conf, p, tlsName)
 		}
 	case "envoy.tcp_proxy":
 		switch p := filterConfig.(type) {
 		case *envoy_config_filter_network_tcp_proxy_v2.TcpProxy:
-			return Convert_config_filter_network_tcp_proxy_v2_TcpProxy(conf, p)
+			return Convert_config_filter_network_tcp_proxy_v2_TcpProxy(conf, p, tlsName)
 		}
 
 	}

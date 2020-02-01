@@ -6,7 +6,7 @@ import (
 	"github.com/wzshiming/envoy/internal/logger"
 )
 
-func Convert_config_filter_network_http_connection_manager_v2_HttpConnectionManager(conf *config.ConfigCtx, c *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager) (string, error) {
+func Convert_config_filter_network_http_connection_manager_v2_HttpConnectionManager(conf *config.ConfigCtx, c *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager, tlsName string) (string, error) {
 	routeName := ""
 	switch r := c.RouteSpecifier.(type) {
 	case *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager_Rds:
@@ -42,7 +42,15 @@ func Convert_config_filter_network_http_connection_manager_v2_HttpConnectionMana
 		}
 	}
 
-	d, err := config.MarshalKindStreamHandlerHTTP(ref, nil)
+	var tlsRef []byte
+	if tlsName != "" {
+		tlsRef, err = config.MarshalRef(tlsName)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	d, err := config.MarshalKindStreamHandlerHTTP(ref, tlsRef)
 	if err != nil {
 		return "", err
 	}

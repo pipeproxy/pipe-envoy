@@ -4,7 +4,7 @@ package convert
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/admin/v3alpha
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/annotations
 //go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/api/v2
-////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/api/v2/auth
+//go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/api/v2/auth
 ////go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster
 //go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/api/v2/core
 //go:generate go run ../hack/convert.go github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint

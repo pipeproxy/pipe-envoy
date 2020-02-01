@@ -16,6 +16,7 @@ type ConfigCtx struct {
 	componentMap map[string]json.RawMessage
 	eds          []string
 	rds          []string
+	sds          []string
 	ctx          context.Context
 	services     []string
 	mut          sync.Mutex
@@ -108,6 +109,15 @@ func (c *ConfigCtx) ResetRDS() []string {
 	return rds
 }
 
+func (c *ConfigCtx) ResetSDS() []string {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	sds := c.sds
+	c.sds = nil
+	return sds
+}
+
 func (c *ConfigCtx) EDS() []string {
 	c.mut.Lock()
 	defer c.mut.Unlock()
@@ -122,9 +132,21 @@ func (c *ConfigCtx) RDS() []string {
 	return c.rds
 }
 
+func (c *ConfigCtx) SDS() []string {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	return c.sds
+}
+
 func (c *ConfigCtx) AppendEDS(eds string) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
+	for _, v := range c.eds {
+		if v == eds {
+			return
+		}
+	}
 
 	c.eds = append(c.eds, eds)
 }
@@ -132,8 +154,25 @@ func (c *ConfigCtx) AppendEDS(eds string) {
 func (c *ConfigCtx) AppendRDS(rds string) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
+	for _, v := range c.rds {
+		if v == rds {
+			return
+		}
+	}
 
 	c.rds = append(c.rds, rds)
+}
+
+func (c *ConfigCtx) AppendSDS(sds string) {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+	for _, v := range c.sds {
+		if v == sds {
+			return
+		}
+	}
+
+	c.sds = append(c.sds, sds)
 }
 
 func (c *ConfigCtx) RegisterComponents(name string, d json.RawMessage) (string, error) {

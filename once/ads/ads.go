@@ -9,6 +9,7 @@ import (
 	"time"
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_api_v2_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	"github.com/wzshiming/envoy/config"
 	"github.com/wzshiming/envoy/convert"
 	"github.com/wzshiming/envoy/internal/client/ads"
@@ -38,6 +39,7 @@ func NewADS(conf *config.ConfigCtx, adsConfig *ads.Config) (*ADS, error) {
 	adsConfig.HandleRDS = a.handleRDS
 	adsConfig.HandleLDS = a.handleLDS
 	adsConfig.HandleEDS = a.handleEDS
+	adsConfig.HandleSDS = a.handleSDS
 
 	cli, err := ads.NewClient("", "", adsConfig)
 	if err != nil {
@@ -107,6 +109,22 @@ func (a *ADS) waitRsc() bool {
 }
 
 func (a *ADS) keepRsc() {
+
+	eds := a.conf.ResetEDS()
+	if len(eds) != 0 {
+		a.ads.SendRsc(ads.EndpointType, eds)
+	}
+
+	rds := a.conf.ResetRDS()
+	if len(rds) != 0 {
+		a.ads.SendRsc(ads.RouteType, rds)
+	}
+
+	sds := a.conf.ResetSDS()
+	if len(sds) != 0 {
+		a.ads.SendRsc(ads.SecretType, sds)
+	}
+
 	select {
 	case a.ch <- struct{}{}:
 	default:
@@ -129,11 +147,6 @@ func (a *ADS) handleCDS(cds []*envoy_api_v2.Cluster) {
 			logger.Error(err)
 		}
 		_ = name
-	}
-
-	eds := a.conf.ResetEDS()
-	if len(eds) != 0 {
-		a.ads.SendRsc(ads.EndpointType, eds)
 	}
 
 	a.keepRsc()
@@ -168,11 +181,6 @@ func (a *ADS) handleLDS(lds []*envoy_api_v2.Listener) {
 		}
 	}
 
-	rds := a.conf.ResetRDS()
-	if len(rds) != 0 {
-		a.ads.SendRsc(ads.RouteType, rds)
-	}
-
 	a.keepRsc()
 }
 
@@ -185,6 +193,19 @@ func (a *ADS) handleRDS(rds []*envoy_api_v2.RouteConfiguration) {
 			return
 		}
 
+		_ = name
+	}
+
+	a.keepRsc()
+}
+
+func (a *ADS) handleSDS(sds []*envoy_api_v2_auth.Secret) {
+	for _, secret := range sds {
+		name, err := convert.Convert_api_v2_auth_Secret(a.conf, secret)
+		if err != nil {
+			logger.Error(err)
+			return
+		}
 		_ = name
 	}
 
