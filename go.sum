@@ -40,8 +40,8 @@ github.com/wzshiming/inject v0.1.0 h1:jIxBvu1uZu1hmTtlVT8KyBqXNKwWZoM7+AipVCLr2b
 github.com/wzshiming/inject v0.1.0/go.mod h1:TMwIIbf/euizgbEFavNdWAudPr7tO9kM0UOLxJJgJkY=
 github.com/wzshiming/lockfile v0.0.5/go.mod h1:vhWLDg1zBZYjo0UGrKCzCa8V+exb/6pq3H9yAulhpHM=
 github.com/wzshiming/notify v0.0.5/go.mod h1:SFhsQKZJznzsDcj/Qfo9A65k5IRcpUrpgbLRzZEa/DI=
-github.com/wzshiming/pipe v0.0.3 h1:dV0DLsVyFGu3QzZ2KbhD00L220xHnLwkh/OLyKHhHnw=
-github.com/wzshiming/pipe v0.0.3/go.mod h1:x8dhKnrUndYj0LNvt0vaHO32fGO5qyQqHoDVbaz9scc=
+github.com/wzshiming/pipe v0.0.4 h1:EfXh1dvGOrz0rXkkyCusjev17QgiIfa2S1c/W2VyT9o=
+github.com/wzshiming/pipe v0.0.4/go.mod h1:x8dhKnrUndYj0LNvt0vaHO32fGO5qyQqHoDVbaz9scc=
 github.com/wzshiming/trie v0.0.1 h1:6xnhRyO5tZWR6aKjEpFfm8KSNNHYsNbpKrY1+NdyHME=
 github.com/wzshiming/trie v0.0.1/go.mod h1:Z20IrQFTHnjWz//dssIoiEPWInBZFyuFlPOFPxV0Rec=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
