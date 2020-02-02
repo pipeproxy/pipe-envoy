@@ -11,6 +11,7 @@ import (
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_v2_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	"github.com/wzshiming/envoy/config"
+	"github.com/wzshiming/envoy/config/clean"
 	"github.com/wzshiming/envoy/convert"
 	"github.com/wzshiming/envoy/internal/client/ads"
 	"github.com/wzshiming/envoy/internal/logger"
@@ -213,14 +214,20 @@ func (a *ADS) handleSDS(sds []*envoy_api_v2_auth.Secret) {
 }
 
 func (a *ADS) reload() error {
-	conf, err := json.MarshalIndent(a.conf, "", "  ")
+	conf, err := json.Marshal(a.conf)
 	if err != nil {
 		return err
 	}
-	logger.Info("reload \n", string(conf))
 	p, ok := pipe.GetPipeWithContext(a.ctx)
 	if !ok {
 		return fmt.Errorf("not get pipe")
+	}
+
+	conf0, err := clean.Clean(conf)
+	if err != nil {
+		logger.Error(err)
+	} else {
+		conf = conf0
 	}
 
 	err = p.Reload(conf)
