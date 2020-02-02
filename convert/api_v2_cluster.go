@@ -10,6 +10,21 @@ import (
 
 func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (string, error) {
 
+	tlsName := ""
+	if c.TransportSocket != nil {
+		name, err := Convert_api_v2_core_TransportSocket(conf, c.TransportSocket)
+		if err != nil {
+			return "", err
+		}
+		tlsName = name
+	} else if c.TlsContext != nil {
+		name, err := Convert_api_v2_auth_UpstreamTlsContext(conf, c.TlsContext)
+		if err != nil {
+			return "", err
+		}
+		tlsName = name
+	}
+
 	if c.ClusterDiscoveryType == nil {
 		list := []json.RawMessage{}
 		for _, host := range c.Hosts {
@@ -28,6 +43,18 @@ func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (st
 			return "", err
 		}
 
+		if tlsName != "" {
+			tlsRef, err := config.MarshalRef(tlsName)
+			if err != nil {
+				return "", err
+			}
+
+			d, err = config.MarshalKindStreamHandlerTlsUp(tlsRef, d)
+			if err != nil {
+				return "", err
+			}
+		}
+
 		name := config.XdsName(c.Name)
 		return conf.RegisterComponents(name, d)
 	}
@@ -39,6 +66,24 @@ func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (st
 			name := c.Name
 			if name != "" {
 				conf.AppendEDS(name)
+				name := config.XdsName(name)
+				if tlsName != "" {
+					tlsRef, err := config.MarshalRef(tlsName)
+					if err != nil {
+						return "", err
+					}
+
+					edsRef, err := config.MarshalRef(name)
+					if err != nil {
+						return "", err
+					}
+
+					d, err := config.MarshalKindStreamHandlerTlsUp(tlsRef, edsRef)
+					if err != nil {
+						return "", err
+					}
+					return conf.RegisterComponents("", d)
+				}
 				return config.XdsName(name), nil
 			}
 		}

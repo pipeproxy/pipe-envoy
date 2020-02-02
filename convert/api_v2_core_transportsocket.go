@@ -29,6 +29,8 @@ func Convert_api_v2_core_TransportSocket(conf *config.ConfigCtx, c *envoy_api_v2
 		switch p := filterConfig.(type) {
 		case *envoy_api_v2_auth.DownstreamTlsContext:
 			return Convert_api_v2_auth_DownstreamTlsContext(conf, p)
+		case *envoy_api_v2_auth.UpstreamTlsContext:
+			return Convert_api_v2_auth_UpstreamTlsContext(conf, p)
 		}
 	}
 
