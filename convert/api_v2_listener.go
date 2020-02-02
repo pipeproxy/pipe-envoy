@@ -28,43 +28,27 @@ func Convert_api_v2_Listener(conf *config.ConfigCtx, c *envoy_api_v2.Listener) (
 		return "", fmt.Errorf("not filter chains")
 	}
 
-	var handlerName string
-	switch len(c.FilterChains) {
-	case 1:
-		name, err := Convert_api_v2_listener_FilterChain(conf, c.FilterChains[0])
+	list := []json.RawMessage{}
+	for _, filterChain := range c.FilterChains {
+		name, err := Convert_api_v2_listener_FilterChain(conf, filterChain)
+		if err != nil {
+			return "", err
+		}
+		ref, err := config.MarshalRef(name)
 		if err != nil {
 			return "", err
 		}
 
-		//TODO remove this
-		if name == "" {
-			return "", nil
-		}
-
-		handlerName = name
-	default:
-		list := []json.RawMessage{}
-		for _, filterChain := range c.FilterChains {
-			name, err := Convert_api_v2_listener_FilterChain(conf, filterChain)
-			if err != nil {
-				return "", err
-			}
-			ref, err := config.MarshalRef(name)
-			if err != nil {
-				return "", err
-			}
-
-			list = append(list, ref)
-		}
-		d, err = config.MarshalKindStreamHandlerMulti(list)
-		if err != nil {
-			return "", err
-		}
-		name = config.XdsName(c.Name + ".filter-chains")
-		handlerName, err = conf.RegisterComponents(name, d)
-		if err != nil {
-			return "", err
-		}
+		list = append(list, ref)
+	}
+	d, err = config.MarshalKindStreamHandlerMulti(list)
+	if err != nil {
+		return "", err
+	}
+	name = config.XdsName(c.Name + ".filter-chains")
+	handlerName, err := conf.RegisterComponents(name, d)
+	if err != nil {
+		return "", err
 	}
 
 	listenerRef, err := config.MarshalRef(listenerName)

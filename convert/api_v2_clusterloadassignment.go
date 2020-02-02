@@ -8,44 +8,26 @@ import (
 )
 
 func Convert_api_v2_ClusterLoadAssignment(conf *config.ConfigCtx, c *envoy_api_v2.ClusterLoadAssignment) (string, error) {
-	switch len(c.Endpoints) {
-	case 1:
-		name, err := Convert_api_v2_endpoint_LocalityLbEndpoints(conf, c.Endpoints[0])
+	list := []json.RawMessage{}
+	for _, endpoint := range c.Endpoints {
+		name, err := Convert_api_v2_endpoint_LocalityLbEndpoints(conf, endpoint)
 		if err != nil {
 			return "", err
 		}
-
 		ref, err := config.MarshalRef(name)
 		if err != nil {
 			return "", err
 		}
 
-		name = config.XdsName(c.ClusterName)
-
-		return conf.RegisterComponents(name, ref)
-
-	default:
-		list := []json.RawMessage{}
-		for _, endpoint := range c.Endpoints {
-			name, err := Convert_api_v2_endpoint_LocalityLbEndpoints(conf, endpoint)
-			if err != nil {
-				return "", err
-			}
-			ref, err := config.MarshalRef(name)
-			if err != nil {
-				return "", err
-			}
-
-			list = append(list, ref)
-		}
-
-		d, err := config.MarshalKindStreamHandlerPoller("round_robin", list)
-		if err != nil {
-			return "", err
-		}
-
-		name := config.XdsName(c.ClusterName)
-
-		return conf.RegisterComponents(name, d)
+		list = append(list, ref)
 	}
+
+	d, err := config.MarshalKindStreamHandlerPoller("round_robin", list)
+	if err != nil {
+		return "", err
+	}
+
+	name := config.XdsName(c.ClusterName)
+
+	return conf.RegisterComponents(name, d)
 }

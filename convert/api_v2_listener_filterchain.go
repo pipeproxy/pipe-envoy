@@ -23,43 +23,25 @@ func Convert_api_v2_listener_FilterChain(conf *config.ConfigCtx, c *envoy_api_v2
 		tlsName = name
 	}
 
-	switch len(c.Filters) {
-	case 1:
-		name, err := Convert_api_v2_listener_Filter(conf, c.Filters[0], tlsName)
+	list := []json.RawMessage{}
+	for _, filter := range c.Filters {
+		name, err := Convert_api_v2_listener_Filter(conf, filter, tlsName)
 		if err != nil {
 			return "", err
-		}
-		if c.Name == "" {
-			return name, nil
 		}
 		ref, err := config.MarshalRef(name)
 		if err != nil {
 			return "", err
 		}
-		name = config.XdsName(c.Name)
-		return conf.RegisterComponents(name, ref)
-	default:
-		list := []json.RawMessage{}
-		for _, filter := range c.Filters {
-			name, err := Convert_api_v2_listener_Filter(conf, filter, tlsName)
-			if err != nil {
-				return "", err
-			}
-			ref, err := config.MarshalRef(name)
-			if err != nil {
-				return "", err
-			}
 
-			list = append(list, ref)
-		}
-
-		d, err := config.MarshalKindStreamHandlerMulti(list)
-		if err != nil {
-			return "", err
-		}
-
-		name := config.XdsName(c.Name)
-		return conf.RegisterComponents(name, d)
+		list = append(list, ref)
 	}
 
+	d, err := config.MarshalKindStreamHandlerMulti(list)
+	if err != nil {
+		return "", err
+	}
+
+	name := config.XdsName(c.Name)
+	return conf.RegisterComponents(name, d)
 }
