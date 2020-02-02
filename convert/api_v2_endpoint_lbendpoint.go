@@ -11,6 +11,7 @@ func Convert_api_v2_endpoint_LbEndpoint(conf *config.ConfigCtx, c *envoy_api_v2_
 	case *envoy_api_v2_endpoint.LbEndpoint_Endpoint:
 		return Convert_api_v2_core_AddressForward(conf, h.Endpoint.Address)
 	case *envoy_api_v2_endpoint.LbEndpoint_EndpointName:
+		return config.XdsName(h.EndpointName), nil
 	}
 
 	logger.Todof("%#v", c)
