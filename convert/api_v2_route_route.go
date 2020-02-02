@@ -32,8 +32,11 @@ func Convert_api_v2_route_Route(conf *config.ConfigCtx, c *envoy_api_v2_route.Ro
 		logger.Todof("%#v", c)
 		return nil, "", nil
 	case *envoy_api_v2_route.Route_DirectResponse:
-		logger.Todof("%#v", c)
-		return nil, "", nil
+		name0, err := Convert_api_v2_route_DirectResponseAction(conf, a.DirectResponse)
+		if err != nil {
+			return nil, "", err
+		}
+		name = name0
 	case *envoy_api_v2_route.Route_FilterAction:
 		logger.Todof("%#v", c)
 		return nil, "", nil

@@ -37,13 +37,18 @@ func Convert_config_bootstrap_v2_Admin(conf *config.ConfigCtx, c *envoy_config_b
 		return "", err
 	}
 
-	const body = `
+	const bodyData = `
 <pre>
 <a href="/expvar/">/expvar/</a>
 <a href="/pprof/">/pprof/</a>
 <a href="/config_dump/">/config_dump/</a>
 </pre>
 `
+	body, err := config.MarshalKindInputInline(bodyData)
+	if err != nil {
+		return "", err
+	}
+
 	dBody, err := config.MarshalKindHttpHandlerDirect(200, body)
 	if err != nil {
 		return "", err

@@ -204,10 +204,10 @@ func MarshalKindHttpHandlerAddResponseHeader(key, value string) (json.RawMessage
 	})
 }
 
-func MarshalKindHttpHandlerDirect(code int, body string) (json.RawMessage, error) {
+func MarshalKindHttpHandlerDirect(code int, body json.RawMessage) (json.RawMessage, error) {
 	return MarshalKind(KindHttpHandlerDirect, struct {
 		Code int `json:",omitempty"`
-		Body string
+		Body json.RawMessage
 	}{
 		Code: code,
 		Body: body,
