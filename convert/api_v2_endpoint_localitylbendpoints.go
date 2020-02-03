@@ -22,7 +22,7 @@ func Convert_api_v2_endpoint_LocalityLbEndpoints(conf *config.ConfigCtx, c *envo
 		list = append(list, ref)
 	}
 
-	d, err := config.MarshalKindStreamHandlerPoller("round_robin", list)
+	d, err := config.MarshalKindDialerPoller("round_robin", list)
 	if err != nil {
 		return "", err
 	}

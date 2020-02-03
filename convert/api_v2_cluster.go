@@ -28,7 +28,7 @@ func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (st
 	if c.ClusterDiscoveryType == nil {
 		list := []json.RawMessage{}
 		for _, host := range c.Hosts {
-			name, err := Convert_api_v2_core_AddressForward(conf, host)
+			name, err := Convert_api_v2_core_AddressDialer(conf, host)
 			if err != nil {
 				return "", err
 			}
@@ -38,7 +38,7 @@ func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (st
 			}
 			list = append(list, ref)
 		}
-		d, err := config.MarshalKindStreamHandlerPoller("round_robin", list)
+		d, err := config.MarshalKindDialerPoller("round_robin", list)
 		if err != nil {
 			return "", err
 		}

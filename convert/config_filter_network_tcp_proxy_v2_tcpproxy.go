@@ -12,7 +12,17 @@ func Convert_config_filter_network_tcp_proxy_v2_TcpProxy(conf *config.ConfigCtx,
 		switch s := c.ClusterSpecifier.(type) {
 		case *envoy_config_filter_network_tcp_proxy_v2.TcpProxy_Cluster:
 			if tlsName == "" {
-				return config.XdsName(s.Cluster), nil
+				clusterRef, err := config.MarshalRef(config.XdsName(s.Cluster))
+				if err != nil {
+					return "", err
+				}
+
+				d, err := config.MarshalKindStreamHandlerForward(clusterRef)
+				if err != nil {
+					return "", err
+				}
+
+				return conf.RegisterComponents("", d)
 			}
 
 			tlsRef, err := config.MarshalRef(tlsName)
@@ -24,7 +34,12 @@ func Convert_config_filter_network_tcp_proxy_v2_TcpProxy(conf *config.ConfigCtx,
 			if err != nil {
 				return "", err
 			}
-			d, err := config.MarshalKindStreamHandlerTlsDown(tlsRef, clusterRef)
+
+			d, err := config.MarshalKindStreamHandlerForward(clusterRef)
+			if err != nil {
+				return "", err
+			}
+			d, err = config.MarshalKindStreamHandlerTlsDown(tlsRef, d)
 			if err != nil {
 				return "", err
 			}

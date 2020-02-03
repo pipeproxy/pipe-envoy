@@ -22,7 +22,7 @@ func Convert_api_v2_ClusterLoadAssignment(conf *config.ConfigCtx, c *envoy_api_v
 		list = append(list, ref)
 	}
 
-	d, err := config.MarshalKindStreamHandlerPoller("round_robin", list)
+	d, err := config.MarshalKindDialerPoller("round_robin", list)
 	if err != nil {
 		return "", err
 	}

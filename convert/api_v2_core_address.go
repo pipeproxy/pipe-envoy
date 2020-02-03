@@ -9,12 +9,12 @@ import (
 	"github.com/wzshiming/envoy/internal/logger"
 )
 
-func Convert_api_v2_core_AddressForward(conf *config.ConfigCtx, c *envoy_api_v2_core.Address) (string, error) {
+func Convert_api_v2_core_AddressDialer(conf *config.ConfigCtx, c *envoy_api_v2_core.Address) (string, error) {
 	network, address, err := convertAddress(c)
 	if err != nil {
 		return "", err
 	}
-	d, err := config.MarshalKindStreamHandlerForward(network, address)
+	d, err := config.MarshalKindDialerNetwork(network, address)
 	if err != nil {
 		return "", err
 	}

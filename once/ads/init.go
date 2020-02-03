@@ -9,8 +9,8 @@ import (
 	"github.com/wzshiming/envoy/internal/client/ads"
 	"github.com/wzshiming/envoy/internal/node"
 	"github.com/wzshiming/pipe/configure"
+	"github.com/wzshiming/pipe/dialer"
 	"github.com/wzshiming/pipe/once"
-	"github.com/wzshiming/pipe/stream"
 )
 
 const (
@@ -22,9 +22,9 @@ func init() {
 }
 
 type Config struct {
-	Name    string `json:"@Name"`
-	NodeID  string
-	Forward stream.Handler
+	Name   string `json:"@Name"`
+	NodeID string
+	Dialer dialer.Dialer
 }
 
 var adsMap = map[string]*ADS{}
@@ -39,9 +39,7 @@ func NewADSWithConfig(ctx context.Context, conf *Config) (once.Once, error) {
 			NodeID: conf.NodeID,
 		},
 		ContextDialer: func(ctx context.Context, s string) (conn net.Conn, err error) {
-			p1, p2 := net.Pipe()
-			go conf.Forward.ServeStream(ctx, p1)
-			return p2, nil
+			return conf.Dialer.Dial(ctx)
 		},
 	}
 

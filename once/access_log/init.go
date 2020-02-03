@@ -5,11 +5,10 @@ import (
 	"net"
 
 	"github.com/wzshiming/envoy/internal/client/access_log"
-
 	"github.com/wzshiming/envoy/internal/node"
 	"github.com/wzshiming/pipe/configure"
+	"github.com/wzshiming/pipe/dialer"
 	"github.com/wzshiming/pipe/once"
-	"github.com/wzshiming/pipe/stream"
 )
 
 const (
@@ -24,7 +23,7 @@ type Config struct {
 	Name    string `json:"@Name"`
 	NodeID  string
 	LogName string
-	Forward stream.Handler
+	Dialer  dialer.Dialer
 }
 
 var accessLogMap = map[string]*AccessLog{}
@@ -39,9 +38,7 @@ func NewAccessLogWithConfig(conf *Config) (once.Once, error) {
 			NodeID: conf.NodeID,
 		},
 		ContextDialer: func(ctx context.Context, s string) (conn net.Conn, err error) {
-			p1, p2 := net.Pipe()
-			go conf.Forward.ServeStream(ctx, p1)
-			return p2, nil
+			return conf.Dialer.Dial(ctx)
 		},
 	}
 

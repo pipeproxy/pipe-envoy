@@ -11,6 +11,7 @@ const (
 	kindMarshaler     = "github.com/wzshiming/pipe/codec.Marshaler"
 	kindHttpHandler   = "net/http.Handler"
 	kindListenConfig  = "github.com/wzshiming/pipe/listener.ListenConfig"
+	kindDialer        = "github.com/wzshiming/pipe/dialer.Dialer"
 	kindService       = "github.com/wzshiming/pipe/service.Service"
 	kindStreamHandler = "github.com/wzshiming/pipe/stream.Handler"
 	kindTLS           = "github.com/wzshiming/pipe/tls.TLS"
@@ -44,6 +45,8 @@ const (
 	KindServiceServer                   = kindService + "@server"
 	KindServiceMulti                    = kindService + "@multi"
 	KindListenConfigNetwork             = kindListenConfig + "@network"
+	KindDialerNetwork                   = kindDialer + "@network"
+	KindDialerPoller                    = kindDialer + "@poller"
 	KindOnceADS                         = kindOnce + "@ads"
 	KindOnceXDS                         = kindOnce + "@xds"
 	KindOnceAccessLog                   = kindOnce + "@access_log"
@@ -114,15 +117,15 @@ func MarshalKindHttpHandlerAccessLog(accessLog, handler json.RawMessage) (json.R
 	})
 }
 
-func MarshalKindOnceAccessLog(nodeID, logName string, forward json.RawMessage) (json.RawMessage, error) {
+func MarshalKindOnceAccessLog(nodeID, logName string, dialer json.RawMessage) (json.RawMessage, error) {
 	return MarshalKind(KindOnceAccessLog, struct {
 		NodeID  string
 		LogName string
-		Forward json.RawMessage
+		Dialer  json.RawMessage
 	}{
 		NodeID:  nodeID,
 		LogName: logName,
-		Forward: forward,
+		Dialer:  dialer,
 	})
 }
 
@@ -214,13 +217,13 @@ func MarshalKindHttpHandlerDirect(code int, body json.RawMessage) (json.RawMessa
 	})
 }
 
-func MarshalKindHttpHandlerForward(pass string, forward json.RawMessage) (json.RawMessage, error) {
+func MarshalKindHttpHandlerForward(pass string, dialer json.RawMessage) (json.RawMessage, error) {
 	return MarshalKind(KindHttpHandlerForward, struct {
-		Pass    string
-		Forward json.RawMessage `json:",omitempty"`
+		Pass   string
+		Dialer json.RawMessage `json:",omitempty"`
 	}{
-		Pass:    pass,
-		Forward: forward,
+		Pass:   pass,
+		Dialer: dialer,
 	})
 }
 
@@ -297,13 +300,11 @@ func MarshalKindStreamHandlerMulti(multi []json.RawMessage) (json.RawMessage, er
 	})
 }
 
-func MarshalKindStreamHandlerForward(network, address string) (json.RawMessage, error) {
+func MarshalKindStreamHandlerForward(dialer json.RawMessage) (json.RawMessage, error) {
 	return MarshalKind(KindStreamHandlerForward, struct {
-		Network string
-		Address string
+		Dialer json.RawMessage
 	}{
-		Network: network,
-		Address: address,
+		Dialer: dialer,
 	})
 }
 
@@ -317,13 +318,13 @@ func MarshalKindStreamHandlerPoller(poller string, handlers []json.RawMessage) (
 	})
 }
 
-func MarshalKindOnceADS(nodeID string, forward json.RawMessage) (json.RawMessage, error) {
+func MarshalKindOnceADS(nodeID string, dialer json.RawMessage) (json.RawMessage, error) {
 	return MarshalKind(KindOnceADS, struct {
-		NodeID  string
-		Forward json.RawMessage
+		NodeID string
+		Dialer json.RawMessage
 	}{
-		NodeID:  nodeID,
-		Forward: forward,
+		NodeID: nodeID,
+		Dialer: dialer,
 	})
 }
 
@@ -334,5 +335,25 @@ func MarshalKindOnceXDS(xds string, ads json.RawMessage) (json.RawMessage, error
 	}{
 		XDS: xds,
 		ADS: ads,
+	})
+}
+
+func MarshalKindDialerNetwork(network, address string) (json.RawMessage, error) {
+	return MarshalKind(KindDialerNetwork, struct {
+		Network string
+		Address string
+	}{
+		Network: network,
+		Address: address,
+	})
+}
+
+func MarshalKindDialerPoller(poller string, dialers []json.RawMessage) (json.RawMessage, error) {
+	return MarshalKind(KindDialerPoller, struct {
+		Poller  string
+		Dialers []json.RawMessage
+	}{
+		Poller:  poller,
+		Dialers: dialers,
 	})
 }
