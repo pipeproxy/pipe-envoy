@@ -36,16 +36,19 @@ func main() {
 
 	ctx, conf, err := convertXDS(context.Background(), data)
 	if err != nil {
+		logger.Info(string(conf))
 		logger.Fatalln(err)
 	}
 
 	pipe, err := pipe.NewPipeWithConfig(ctx, conf)
 	if err != nil {
+		logger.Info(string(conf))
 		logger.Fatalln(err)
 	}
 
 	err = pipe.Run()
 	if err != nil {
+		logger.Infof(string(conf))
 		logger.Fatalln(err)
 	}
 

@@ -95,7 +95,6 @@ func (a *ADS) StartCDS() error {
 	if err != nil {
 		return err
 	}
-	a.keepRsc()
 	return nil
 }
 
@@ -105,7 +104,6 @@ func (a *ADS) StartLDS() error {
 	if err != nil {
 		return err
 	}
-	a.keepRsc()
 	return nil
 }
 
@@ -223,6 +221,7 @@ func (a *ADS) reload() error {
 
 	err = p.Reload(conf)
 	if err != nil {
+		logger.Infof(string(conf))
 		logger.Error(err)
 	}
 	return nil
