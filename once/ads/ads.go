@@ -132,11 +132,10 @@ func (a *ADS) keepRsc() {
 
 func (a *ADS) handleCDS(cds []*envoy_api_v2.Cluster) {
 	for _, cluster := range cds {
-		name, err := convert.Convert_api_v2_Cluster(a.configCtx, cluster)
+		_, err := convert.Convert_api_v2_Cluster(a.configCtx, cluster)
 		if err != nil {
 			logger.Error(err)
 		}
-		_ = name
 	}
 
 	a.keepRsc()
@@ -144,11 +143,10 @@ func (a *ADS) handleCDS(cds []*envoy_api_v2.Cluster) {
 
 func (a *ADS) handleEDS(eds []*envoy_api_v2.ClusterLoadAssignment) {
 	for _, endpoint := range eds {
-		name, err := convert.Convert_api_v2_ClusterLoadAssignment(a.configCtx, endpoint)
+		_, err := convert.Convert_api_v2_ClusterLoadAssignment(a.configCtx, endpoint)
 		if err != nil {
 			logger.Error(err)
 		}
-		_ = name
 	}
 
 	a.keepRsc()
@@ -156,18 +154,9 @@ func (a *ADS) handleEDS(eds []*envoy_api_v2.ClusterLoadAssignment) {
 
 func (a *ADS) handleLDS(lds []*envoy_api_v2.Listener) {
 	for _, listener := range lds {
-
-		name, err := convert.Convert_api_v2_Listener(a.configCtx, listener)
+		_, err := convert.Convert_api_v2_Listener(a.configCtx, listener)
 		if err != nil {
 			logger.Error(err)
-			return
-		}
-		if name != "" {
-			err = a.configCtx.RegisterService(name)
-			if err != nil {
-				logger.Error(err)
-				return
-			}
 		}
 	}
 
@@ -176,14 +165,10 @@ func (a *ADS) handleLDS(lds []*envoy_api_v2.Listener) {
 
 func (a *ADS) handleRDS(rds []*envoy_api_v2.RouteConfiguration) {
 	for _, route := range rds {
-
-		name, err := convert.Convert_api_v2_RouteConfiguration(a.configCtx, route)
+		_, err := convert.Convert_api_v2_RouteConfiguration(a.configCtx, route)
 		if err != nil {
 			logger.Error(err)
-			return
 		}
-
-		_ = name
 	}
 
 	a.keepRsc()
@@ -191,12 +176,10 @@ func (a *ADS) handleRDS(rds []*envoy_api_v2.RouteConfiguration) {
 
 func (a *ADS) handleSDS(sds []*envoy_api_v2_auth.Secret) {
 	for _, secret := range sds {
-		name, err := convert.Convert_api_v2_auth_Secret(a.configCtx, secret)
+		_, err := convert.Convert_api_v2_auth_Secret(a.configCtx, secret)
 		if err != nil {
 			logger.Error(err)
-			return
 		}
-		_ = name
 	}
 
 	a.keepRsc()
@@ -224,5 +207,6 @@ func (a *ADS) reload() error {
 		logger.Infof(string(conf))
 		logger.Error(err)
 	}
+
 	return nil
 }
