@@ -8,7 +8,7 @@ import (
 	"github.com/wzshiming/envoy/config"
 	"github.com/wzshiming/envoy/internal/client/ads"
 	"github.com/wzshiming/envoy/internal/node"
-	"github.com/wzshiming/pipe/configure"
+	"github.com/wzshiming/pipe/configure/manager"
 	"github.com/wzshiming/pipe/dialer"
 	"github.com/wzshiming/pipe/once"
 )
@@ -18,7 +18,7 @@ const (
 )
 
 func init() {
-	configure.Register(name, NewADSWithConfig)
+	manager.Register(name, NewADSWithConfig)
 }
 
 type Config struct {

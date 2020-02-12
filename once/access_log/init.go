@@ -6,7 +6,7 @@ import (
 
 	"github.com/wzshiming/envoy/internal/client/access_log"
 	"github.com/wzshiming/envoy/internal/node"
-	"github.com/wzshiming/pipe/configure"
+	"github.com/wzshiming/pipe/configure/manager"
 	"github.com/wzshiming/pipe/dialer"
 	"github.com/wzshiming/pipe/once"
 )
@@ -16,7 +16,7 @@ const (
 )
 
 func init() {
-	configure.Register(name, NewAccessLogWithConfig)
+	manager.Register(name, NewAccessLogWithConfig)
 }
 
 type Config struct {

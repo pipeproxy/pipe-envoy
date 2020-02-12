@@ -4,8 +4,7 @@ import (
 	"fmt"
 
 	"github.com/wzshiming/envoy/once/ads"
-
-	"github.com/wzshiming/pipe/configure"
+	"github.com/wzshiming/pipe/configure/manager"
 	"github.com/wzshiming/pipe/once"
 )
 
@@ -14,7 +13,7 @@ const (
 )
 
 func init() {
-	configure.Register(name, NewXDSWithConfig)
+	manager.Register(name, NewXDSWithConfig)
 }
 
 type Config struct {

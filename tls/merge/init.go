@@ -1,14 +1,14 @@
 package merge
 
 import (
-	"github.com/wzshiming/pipe/configure"
+	"github.com/wzshiming/pipe/configure/manager"
 	"github.com/wzshiming/pipe/tls"
 )
 
 const name = "merge"
 
 func init() {
-	configure.Register(name, NewMergeWithConfig)
+	manager.Register(name, NewMergeWithConfig)
 }
 
 type Config struct {

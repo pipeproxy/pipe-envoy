@@ -3,7 +3,7 @@ package validation
 import (
 	"io/ioutil"
 
-	"github.com/wzshiming/pipe/configure"
+	"github.com/wzshiming/pipe/configure/manager"
 	"github.com/wzshiming/pipe/input"
 	"github.com/wzshiming/pipe/tls"
 )
@@ -11,7 +11,7 @@ import (
 const name = "validation"
 
 func init() {
-	configure.Register(name, NewValidationWithConfig)
+	manager.Register(name, NewValidationWithConfig)
 }
 
 type Config struct {
