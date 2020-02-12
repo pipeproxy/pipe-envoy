@@ -1,47 +1,43 @@
 package convert
 
 import (
-	"encoding/json"
-
 	envoy_api_v2_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	"github.com/wzshiming/envoy/bind"
 	"github.com/wzshiming/envoy/config"
 )
 
-func Convert_api_v2_listener_FilterChain(conf *config.ConfigCtx, c *envoy_api_v2_listener.FilterChain) (string, error) {
-	tlsName := ""
+func Convert_api_v2_listener_FilterChain(conf *config.ConfigCtx, c *envoy_api_v2_listener.FilterChain) (bind.StreamHandler, error) {
+	var tls bind.TLS
 	if c.TransportSocket != nil {
-		name, err := Convert_api_v2_core_TransportSocket(conf, c.TransportSocket)
+		t, err := Convert_api_v2_core_TransportSocket(conf, c.TransportSocket)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		tlsName = name
+		tls = t
 	} else if c.TlsContext != nil {
-		name, err := Convert_api_v2_auth_DownstreamTlsContext(conf, c.TlsContext)
+		t, err := Convert_api_v2_auth_DownstreamTlsContext(conf, c.TlsContext)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		tlsName = name
+		tls = t
 	}
 
-	list := []json.RawMessage{}
+	multi := []bind.StreamHandler{}
 	for _, filter := range c.Filters {
-		name, err := Convert_api_v2_listener_Filter(conf, filter, tlsName)
+		handler, err := Convert_api_v2_listener_Filter(conf, filter, tls)
 		if err != nil {
-			return "", err
-		}
-		ref, err := config.MarshalRef(name)
-		if err != nil {
-			return "", err
+			return nil, err
 		}
 
-		list = append(list, ref)
+		multi = append(multi, handler)
 	}
 
-	d, err := config.MarshalKindStreamHandlerMulti(list)
-	if err != nil {
-		return "", err
-	}
-
+	d := bind.StreamHandlerMultiConfig{Multi: multi}
 	name := config.XdsName(c.Name)
-	return conf.RegisterComponents(name, d)
+	ref, err := conf.RegisterComponents(name, d)
+	if err != nil {
+		return nil, err
+	}
+
+	return bind.RefStreamHandler(ref), nil
 }

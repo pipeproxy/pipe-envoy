@@ -1,19 +1,19 @@
 package config
 
 import (
-	"bytes"
 	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"sort"
 	"sync"
+
+	"github.com/wzshiming/envoy/bind"
 )
 
 type ConfigCtx struct {
-	init         []json.RawMessage
-	componentMap map[string]json.RawMessage
+	init         []bind.Once
+	componentMap map[string]bind.PipeComponent
 	eds          []string
 	rds          []string
 	sds          []string
@@ -26,38 +26,23 @@ func (c *ConfigCtx) MarshalJSON() ([]byte, error) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 
-	conf := struct {
-		Pipe       json.RawMessage
-		Init       []json.RawMessage `json:",omitempty"`
-		Components []json.RawMessage `json:",omitempty"`
-	}{}
+	conf := bind.PipeConfig{}
 
 	switch len(c.services) {
 	case 0:
-		conf.Pipe = MustMarshalKind("none", nil)
+		conf.Pipe = bind.ServiceNone{}
 	case 1:
-
-		pipe, err := MarshalRef(c.services[0])
-		if err != nil {
-			return nil, err
-		}
-		conf.Pipe = pipe
+		conf.Pipe = bind.RefService(c.services[0])
 
 	default:
-		list := []json.RawMessage{}
+		multi := make([]bind.Service, 0, len(c.services))
 		for _, service := range c.services {
-			ref, err := MarshalRef(service)
-			if err != nil {
-				return nil, err
-			}
-			list = append(list, ref)
+			multi = append(multi, bind.RefService(service))
 		}
 
-		pipe, err := MarshalKindServiceMulti(list)
-		if err != nil {
-			return nil, err
+		conf.Pipe = bind.ServiceMultiConfig{
+			Multi: multi,
 		}
-		conf.Pipe = pipe
 	}
 
 	keys := make([]string, 0, len(c.componentMap))
@@ -66,7 +51,7 @@ func (c *ConfigCtx) MarshalJSON() ([]byte, error) {
 	}
 	sort.Strings(keys)
 
-	conf.Components = make([]json.RawMessage, 0, len(c.componentMap))
+	conf.Components = make([]bind.PipeComponent, 0, len(c.componentMap))
 	for _, key := range keys {
 		conf.Components = append(conf.Components, c.componentMap[key])
 	}
@@ -175,20 +160,26 @@ func (c *ConfigCtx) AppendSDS(sds string) {
 	c.sds = append(c.sds, sds)
 }
 
-func (c *ConfigCtx) RegisterComponents(name string, d json.RawMessage) (string, error) {
+func (c *ConfigCtx) RegisterComponents(name string, d bind.PipeComponent) (string, error) {
+
 	c.mut.Lock()
 	defer c.mut.Unlock()
 
-	n, d, err := MarshalName(name, d)
-	if err != nil {
-		return "", err
+	if name == "" {
+		n, raw, err := marshalName(name, d)
+		if err != nil {
+			return "", err
+		}
+		name = n
+		d = bind.RawPipeComponent(raw)
 	}
 
-	if c.componentMap == nil {
-		c.componentMap = map[string]json.RawMessage{}
+	d = bind.NamePipeComponent{
+		Name:          name,
+		PipeComponent: d,
 	}
-	c.componentMap[n] = d
-	return n, nil
+	c.componentMap[name] = d
+	return name, nil
 }
 
 func (c *ConfigCtx) RegisterService(name string) error {
@@ -204,7 +195,7 @@ func (c *ConfigCtx) RegisterService(name string) error {
 	return nil
 }
 
-func (c *ConfigCtx) RegisterInit(d json.RawMessage) (string, error) {
+func (c *ConfigCtx) RegisterInit(d bind.Once) (string, error) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 
@@ -212,46 +203,15 @@ func (c *ConfigCtx) RegisterInit(d json.RawMessage) (string, error) {
 	return "", nil
 }
 
-func MustMarshalKind(kind string, i interface{}) json.RawMessage {
-	d, err := MarshalKind(kind, i)
+func marshalName(name string, m json.Marshaler) (string, json.RawMessage, error) {
+	d, err := m.MarshalJSON()
 	if err != nil {
-		panic(err)
+		return "", nil, err
 	}
-	return d
-}
-
-func MarshalKind(kind string, i interface{}) (json.RawMessage, error) {
-	d, err := json.Marshal(i)
-	if err != nil {
-		return nil, err
-	}
-
-	if bytes.Equal(d, []byte("null")) || bytes.Equal(d, []byte("{}")) {
-		return []byte(fmt.Sprintf(`{"@Kind":%q}`, kind)), nil
-	}
-
-	if len(d) > 2 && d[0] == '{' {
-		return append([]byte(fmt.Sprintf(`{"@Kind":%q,`, kind)), d[1:]...), nil
-	}
-
-	return d, nil
-}
-
-func MarshalName(name string, d json.RawMessage) (string, json.RawMessage, error) {
-	if name == "" {
-		hash := md5.Sum(d)
-		name = "auto@" + hex.EncodeToString(hash[:])
-	}
-
-	if len(d) > 2 && d[0] == '{' && d[1] != '}' {
-		d = append([]byte(fmt.Sprintf(`{"@Name":%q,`, name)), d[1:]...)
-	}
+	hash := md5.Sum(d)
+	name = "auto@" + hex.EncodeToString(hash[:])
 
 	return name, d, nil
-}
-
-func MarshalRef(ref string) (json.RawMessage, error) {
-	return []byte(fmt.Sprintf(`{"@Ref":%q}`, ref)), nil
 }
 
 type xdsCtxKeyType int
@@ -267,9 +227,17 @@ func GetXdsWithContext(ctx context.Context) (*ConfigCtx, bool) {
 
 func NewConfigCtx(ctx context.Context) *ConfigCtx {
 	c := &ConfigCtx{
-		ctx: ctx,
+		ctx:          ctx,
+		componentMap: map[string]bind.PipeComponent{},
 	}
 	ctx = context.WithValue(ctx, xdsCtxKeyType(0), c)
 	c.ctx = ctx
 	return c
+}
+
+func XdsName(name string) string {
+	if name == "" {
+		return ""
+	}
+	return "xds@" + name
 }

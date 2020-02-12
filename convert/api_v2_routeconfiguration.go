@@ -1,33 +1,32 @@
 package convert
 
 import (
-	"encoding/json"
-
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	"github.com/wzshiming/envoy/bind"
 	"github.com/wzshiming/envoy/config"
 )
 
-func Convert_api_v2_RouteConfiguration(conf *config.ConfigCtx, c *envoy_api_v2.RouteConfiguration) (string, error) {
-	list := []json.RawMessage{}
+func Convert_api_v2_RouteConfiguration(conf *config.ConfigCtx, c *envoy_api_v2.RouteConfiguration) (bind.HttpHandler, error) {
+	handlers := []bind.HttpHandler{}
 	for _, virtualHost := range c.VirtualHosts {
-		name, err := Convert_api_v2_route_VirtualHost(conf, virtualHost)
+		handler, err := Convert_api_v2_route_VirtualHost(conf, virtualHost)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		ref, err := config.MarshalRef(name)
-		if err != nil {
-			return "", err
-		}
-
-		list = append(list, ref)
+		handlers = append(handlers, handler)
 	}
 
-	d, err := config.MarshalKindHttpHandlerPoller("round_robin", list)
-	if err != nil {
-		return "", err
+	d := bind.HttpHandlerPollerConfig{
+		Poller:   "round_robin",
+		Handlers: handlers,
 	}
 
 	name := config.XdsName(c.Name)
 
-	return conf.RegisterComponents(name, d)
+	ref, err := conf.RegisterComponents(name, d)
+	if err != nil {
+		return nil, err
+	}
+
+	return bind.RefHttpHandler(ref), nil
 }

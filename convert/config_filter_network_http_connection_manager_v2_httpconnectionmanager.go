@@ -2,59 +2,47 @@ package convert
 
 import (
 	envoy_config_filter_network_http_connection_manager_v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	"github.com/wzshiming/envoy/bind"
 	"github.com/wzshiming/envoy/config"
 	"github.com/wzshiming/envoy/internal/logger"
 )
 
-func Convert_config_filter_network_http_connection_manager_v2_HttpConnectionManager(conf *config.ConfigCtx, c *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager, tlsName string) (string, error) {
-	routeName := ""
+func Convert_config_filter_network_http_connection_manager_v2_HttpConnectionManager(conf *config.ConfigCtx, c *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager, tls bind.TLS) (bind.StreamHandler, error) {
+	var route bind.HttpHandler
 	switch r := c.RouteSpecifier.(type) {
 	case *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager_Rds:
-		name, err := Convert_config_filter_network_http_connection_manager_v2_Rds(conf, r.Rds)
+		handler, err := Convert_config_filter_network_http_connection_manager_v2_Rds(conf, r.Rds)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		routeName = name
+		route = handler
 	case *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager_RouteConfig:
-		name, err := Convert_api_v2_RouteConfiguration(conf, r.RouteConfig)
+		handler, err := Convert_api_v2_RouteConfiguration(conf, r.RouteConfig)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		routeName = name
+		route = handler
 	case *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager_ScopedRoutes:
 		logger.Todof("%#v", c)
-		return "", nil
-	}
-
-	ref, err := config.MarshalRef(routeName)
-	if err != nil {
-		return "", err
+		return nil, nil
 	}
 
 	for _, accessLog := range c.AccessLog {
-		name, err := Convert_config_filter_accesslog_v2_AccessLog(conf, accessLog, ref)
+		n, err := Convert_config_filter_accesslog_v2_AccessLog(conf, accessLog, route)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		ref, err = config.MarshalRef(name)
-		if err != nil {
-			return "", err
-		}
+		route = n
 	}
 
-	var tlsRef []byte
-	if tlsName != "" {
-		tlsRef, err = config.MarshalRef(tlsName)
-		if err != nil {
-			return "", err
-		}
+	d := bind.StreamHandlerHttpConfig{
+		Handler: route,
+		TLS:     tls,
 	}
 
-	d, err := config.MarshalKindStreamHandlerHTTP(ref, tlsRef)
+	ref, err := conf.RegisterComponents("", d)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
-	name := routeName + ".route"
-	return conf.RegisterComponents(name, d)
+	return bind.RefStreamHandler(ref), nil
 }

@@ -1,62 +1,56 @@
 package convert
 
 import (
-	"encoding/json"
-
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	"github.com/wzshiming/envoy/bind"
 	"github.com/wzshiming/envoy/config"
 	"github.com/wzshiming/envoy/internal/logger"
 )
 
-func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (string, error) {
+func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (bind.Dialer, error) {
 
-	tlsName := ""
+	var tls bind.TLS
 	if c.TransportSocket != nil {
-		name, err := Convert_api_v2_core_TransportSocket(conf, c.TransportSocket)
+		t, err := Convert_api_v2_core_TransportSocket(conf, c.TransportSocket)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		tlsName = name
+		tls = t
 	} else if c.TlsContext != nil {
-		name, err := Convert_api_v2_auth_UpstreamTlsContext(conf, c.TlsContext)
+		t, err := Convert_api_v2_auth_UpstreamTlsContext(conf, c.TlsContext)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		tlsName = name
+		tls = t
 	}
 
 	if c.ClusterDiscoveryType == nil {
-		list := []json.RawMessage{}
+		dialers := []bind.Dialer{}
 		for _, host := range c.Hosts {
-			name, err := Convert_api_v2_core_AddressDialer(conf, host)
+			dialer, err := Convert_api_v2_core_AddressDialer(conf, host)
 			if err != nil {
-				return "", err
+				return nil, err
 			}
-			ref, err := config.MarshalRef(name)
-			if err != nil {
-				return "", err
-			}
-			list = append(list, ref)
+			dialers = append(dialers, dialer)
 		}
-		d, err := config.MarshalKindDialerPoller("round_robin", list)
+
+		var d bind.Dialer = bind.DialerPollerConfig{
+			Poller:  "round_robin",
+			Dialers: dialers,
+		}
+		if tls != nil {
+			d = bind.DialerTlsConfig{
+				Dialer: d,
+				TLS:    tls,
+			}
+		}
+
+		ref, err := conf.RegisterComponents(config.XdsName(c.Name), d)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
-		if tlsName != "" {
-			tlsRef, err := config.MarshalRef(tlsName)
-			if err != nil {
-				return "", err
-			}
-
-			d, err = config.MarshalKindStreamHandlerTlsUp(tlsRef, d)
-			if err != nil {
-				return "", err
-			}
-		}
-
-		name := config.XdsName(c.Name)
-		return conf.RegisterComponents(name, d)
+		return bind.RefDialer(ref), nil
 	}
 
 	switch d := c.ClusterDiscoveryType.(type) {
@@ -66,30 +60,26 @@ func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (st
 			name := c.Name
 			if name != "" {
 				conf.AppendEDS(name)
-				name := config.XdsName(name)
-				if tlsName != "" {
-					tlsRef, err := config.MarshalRef(tlsName)
-					if err != nil {
-						return "", err
-					}
 
-					edsRef, err := config.MarshalRef(name)
-					if err != nil {
-						return "", err
+				var d bind.Dialer = bind.RefDialer(config.XdsName(name))
+				if tls != nil {
+					d = bind.DialerTlsConfig{
+						Dialer: d,
+						TLS:    tls,
 					}
-
-					d, err := config.MarshalKindStreamHandlerTlsUp(tlsRef, edsRef)
-					if err != nil {
-						return "", err
-					}
-					return conf.RegisterComponents("", d)
 				}
-				return config.XdsName(name), nil
+
+				ref, err := conf.RegisterComponents("", d)
+				if err != nil {
+					return nil, err
+				}
+
+				return bind.RefDialer(ref), nil
 			}
 		}
 	case *envoy_api_v2.Cluster_ClusterType:
 	}
 
 	logger.Todof("%#v", c)
-	return "", nil
+	return nil, nil
 }

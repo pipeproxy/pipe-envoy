@@ -6,22 +6,23 @@ import (
 	envoy_api_v2_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/golang/protobuf/proto"
+	"github.com/wzshiming/envoy/bind"
 	"github.com/wzshiming/envoy/config"
 	"github.com/wzshiming/envoy/internal/logger"
 	"github.com/wzshiming/envoy/wellknown"
 )
 
-func Convert_api_v2_core_TransportSocket(conf *config.ConfigCtx, c *envoy_api_v2_core.TransportSocket) (string, error) {
+func Convert_api_v2_core_TransportSocket(conf *config.ConfigCtx, c *envoy_api_v2_core.TransportSocket) (bind.TLS, error) {
 	var filterConfig proto.Message
 	switch t := c.ConfigType.(type) {
 	case *envoy_api_v2_core.TransportSocket_TypedConfig:
 		msg, err := config.UnmarshalAny(t.TypedConfig)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		filterConfig = msg
 	case *envoy_api_v2_core.TransportSocket_Config:
-		return "", fmt.Errorf("not suppert envoy_api_v2_core.TransportSocket_Config")
+		return nil, fmt.Errorf("not suppert envoy_api_v2_core.TransportSocket_Config")
 	}
 
 	switch c.Name {
@@ -35,5 +36,5 @@ func Convert_api_v2_core_TransportSocket(conf *config.ConfigCtx, c *envoy_api_v2
 	}
 
 	logger.Todof("%#v", c)
-	return "", nil
+	return nil, nil
 }

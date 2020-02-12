@@ -2,52 +2,37 @@ package convert
 
 import (
 	envoy_config_filter_network_tcp_proxy_v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
+	"github.com/wzshiming/envoy/bind"
 	"github.com/wzshiming/envoy/config"
 	"github.com/wzshiming/envoy/internal/logger"
 )
 
-func Convert_config_filter_network_tcp_proxy_v2_TcpProxy(conf *config.ConfigCtx, c *envoy_config_filter_network_tcp_proxy_v2.TcpProxy, tlsName string) (string, error) {
+func Convert_config_filter_network_tcp_proxy_v2_TcpProxy(conf *config.ConfigCtx, c *envoy_config_filter_network_tcp_proxy_v2.TcpProxy, tls bind.TLS) (bind.StreamHandler, error) {
 	switch c.StatPrefix {
 	case "tcp":
 		switch s := c.ClusterSpecifier.(type) {
 		case *envoy_config_filter_network_tcp_proxy_v2.TcpProxy_Cluster:
-			if tlsName == "" {
-				clusterRef, err := config.MarshalRef(config.XdsName(s.Cluster))
-				if err != nil {
-					return "", err
+
+			var d bind.StreamHandler = bind.StreamHandlerForwardConfig{
+				Dialer: bind.RefDialer(config.XdsName(s.Cluster)),
+			}
+
+			if tls != nil {
+				d = bind.StreamHandlerTlsDownConfig{
+					Handler: d,
+					TLS:     tls,
 				}
-
-				d, err := config.MarshalKindStreamHandlerForward(clusterRef)
-				if err != nil {
-					return "", err
-				}
-
-				return conf.RegisterComponents("", d)
 			}
 
-			tlsRef, err := config.MarshalRef(tlsName)
+			ref, err := conf.RegisterComponents("", d)
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 
-			clusterRef, err := config.MarshalRef(config.XdsName(s.Cluster))
-			if err != nil {
-				return "", err
-			}
-
-			d, err := config.MarshalKindStreamHandlerForward(clusterRef)
-			if err != nil {
-				return "", err
-			}
-			d, err = config.MarshalKindStreamHandlerTlsDown(tlsRef, d)
-			if err != nil {
-				return "", err
-			}
-
-			return conf.RegisterComponents("", d)
+			return bind.RefStreamHandler(ref), nil
 		case *envoy_config_filter_network_tcp_proxy_v2.TcpProxy_WeightedClusters:
 		}
 	}
 	logger.Todof("%#v", c)
-	return "", nil
+	return nil, nil
 }

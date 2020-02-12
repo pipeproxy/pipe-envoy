@@ -2,31 +2,29 @@ package convert
 
 import (
 	envoy_api_v2_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	"github.com/wzshiming/envoy/bind"
 	"github.com/wzshiming/envoy/config"
 )
 
-func Convert_api_v2_auth_TlsCertificate(conf *config.ConfigCtx, c *envoy_api_v2_auth.TlsCertificate) (string, error) {
-	name, err := Convert_api_v2_core_DataSource(conf, c.PrivateKey)
+func Convert_api_v2_auth_TlsCertificate(conf *config.ConfigCtx, c *envoy_api_v2_auth.TlsCertificate) (bind.TLS, error) {
+	keyRef, err := Convert_api_v2_core_DataSource(conf, c.PrivateKey)
 	if err != nil {
-		return "", err
-	}
-	keyRef, err := config.MarshalRef(name)
-	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	name, err = Convert_api_v2_core_DataSource(conf, c.CertificateChain)
+	certRef, err := Convert_api_v2_core_DataSource(conf, c.CertificateChain)
 	if err != nil {
-		return "", err
-	}
-	certRef, err := config.MarshalRef(name)
-	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	d, err := config.MarshalKindTlsFrom("", certRef, keyRef)
+	ref, err := conf.RegisterComponents("", bind.TLSFromConfig{
+		Domain: "",
+		Cert:   certRef,
+		Key:    keyRef,
+	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return conf.RegisterComponents("", d)
+
+	return bind.RefTLS(ref), nil
 }

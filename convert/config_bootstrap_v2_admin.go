@@ -1,97 +1,72 @@
 package convert
 
 import (
-	"encoding/json"
-
 	envoy_config_bootstrap_v2 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
+	"github.com/wzshiming/envoy/bind"
 	"github.com/wzshiming/envoy/config"
 )
 
-func Convert_config_bootstrap_v2_Admin(conf *config.ConfigCtx, c *envoy_config_bootstrap_v2.Admin) (string, error) {
-	name, err := Convert_api_v2_core_AddressListener(conf, c.Address)
+func Convert_config_bootstrap_v2_Admin(conf *config.ConfigCtx, c *envoy_config_bootstrap_v2.Admin) (bind.Service, error) {
+	listener, err := Convert_api_v2_core_AddressListener(conf, c.Address)
 	if err != nil {
-		return "", err
-	}
-	listenerRef, err := config.MarshalRef(name)
-	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	routes := []*config.Route{
+	d := bind.ServiceServerConfig{
+		Listener: listener,
+		Handler: bind.StreamHandlerHttpConfig{
+			Handler: bind.HttpHandlerLogConfig{
+				Output:  bind.OutputFileConfig{Path: c.AccessLogPath},
+				Handler: adminHandler,
+			},
+			TLS: nil,
+		},
+	}
+
+	ref, err := conf.RegisterComponents("", d)
+	if err != nil {
+		return nil, err
+	}
+
+	err = conf.RegisterService(ref)
+	if err != nil {
+		return nil, err
+	}
+	return bind.RefService(ref), nil
+}
+
+var adminHandler = bind.HttpHandlerMuxConfig{
+	Routes: []bind.HttpHandlerMuxRoute{
 		{
 			Path:    "/expvar/",
-			Handler: config.MustMarshalKind("expvar", nil),
+			Handler: bind.HttpHandlerExpvar{},
 		},
 		{
 			Prefix:  "/pprof/",
-			Handler: config.MustMarshalKind("pprof", nil),
+			Handler: bind.HttpHandlerPprof{},
 		},
 		{
 			Prefix:  "/config_dump/",
-			Handler: config.MustMarshalKind("config_dump", nil),
+			Handler: bind.HttpHandlerConfigDump{},
 		},
-	}
-
-	dHeader, err := config.MarshalKindHttpHandlerAddResponseHeader("Content-Type", "text/html; charset=utf-8")
-	if err != nil {
-		return "", err
-	}
-
-	const bodyData = `
+	},
+	NotFound: bind.HttpHandlerMultiConfig{
+		Multi: []bind.HttpHandler{
+			bind.HttpHandlerAddResponseHeaderConfig{
+				Key:   "Content-Type",
+				Value: "text/html; charset=utf-8",
+			},
+			bind.HttpHandlerDirectConfig{
+				Code: 200,
+				Body: bind.InputInlineConfig{
+					Data: `
 <pre>
 <a href="/expvar/">/expvar/</a>
 <a href="/pprof/">/pprof/</a>
 <a href="/config_dump/">/config_dump/</a>
 </pre>
-`
-	body, err := config.MarshalKindInputInline(bodyData)
-	if err != nil {
-		return "", err
-	}
-
-	dBody, err := config.MarshalKindHttpHandlerDirect(200, body)
-	if err != nil {
-		return "", err
-	}
-
-	d, err := config.MarshalKindHttpHandlerMulti([]json.RawMessage{dHeader, dBody})
-	if err != nil {
-		return "", err
-	}
-
-	d, err = config.MarshalKindHttpHandlerMux(routes, d)
-	if err != nil {
-		return "", err
-	}
-
-	output, err := config.MarshalKindOutputFile(c.AccessLogPath)
-	if err != nil {
-		return "", err
-	}
-
-	d, err = config.MarshalKindHttpHandlerLog(output, d)
-	if err != nil {
-		return "", err
-	}
-
-	d, err = config.MarshalKindStreamHandlerHTTP(d, nil)
-	if err != nil {
-		return "", err
-	}
-
-	d, err = config.MarshalKindServiceServer(listenerRef, d)
-	if err != nil {
-		return "", err
-	}
-
-	name, err = conf.RegisterComponents("", d)
-	if err != nil {
-		return "", err
-	}
-
-	err = conf.RegisterService(name)
-	if err != nil {
-		return "", err
-	}
-	return name, nil
+`,
+				},
+			},
+		}},
 }

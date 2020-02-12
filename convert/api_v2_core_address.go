@@ -5,32 +5,47 @@ import (
 	"strings"
 
 	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	"github.com/wzshiming/envoy/bind"
 	"github.com/wzshiming/envoy/config"
 	"github.com/wzshiming/envoy/internal/logger"
 )
 
-func Convert_api_v2_core_AddressDialer(conf *config.ConfigCtx, c *envoy_api_v2_core.Address) (string, error) {
+func Convert_api_v2_core_AddressDialer(conf *config.ConfigCtx, c *envoy_api_v2_core.Address) (bind.Dialer, error) {
 	network, address, err := convertAddress(c)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	d, err := config.MarshalKindDialerNetwork(network, address)
+
+	d := bind.DialerNetworkConfig{
+		Network: network,
+		Address: address,
+	}
+
+	ref, err := conf.RegisterComponents("", d)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return conf.RegisterComponents("", d)
+
+	return bind.RefDialer(ref), nil
 }
 
-func Convert_api_v2_core_AddressListener(conf *config.ConfigCtx, c *envoy_api_v2_core.Address) (string, error) {
+func Convert_api_v2_core_AddressListener(conf *config.ConfigCtx, c *envoy_api_v2_core.Address) (bind.ListenerListenConfig, error) {
 	network, address, err := convertAddress(c)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	d, err := config.MarshalKindListenConfigNetwork(network, address)
+
+	d := bind.ListenerListenConfigNetworkConfig{
+		Network: network,
+		Address: address,
+	}
+
+	ref, err := conf.RegisterComponents("", d)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return conf.RegisterComponents("", d)
+
+	return bind.RefListenerListenConfig(ref), nil
 }
 
 func convertAddress(c *envoy_api_v2_core.Address) (string, string, error) {

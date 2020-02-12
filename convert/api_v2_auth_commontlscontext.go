@@ -1,66 +1,57 @@
 package convert
 
 import (
-	"encoding/json"
-
 	envoy_api_v2_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	"github.com/wzshiming/envoy/bind"
 	"github.com/wzshiming/envoy/config"
 )
 
-func Convert_api_v2_auth_CommonTlsContext(conf *config.ConfigCtx, c *envoy_api_v2_auth.CommonTlsContext) (string, error) {
+func Convert_api_v2_auth_CommonTlsContext(conf *config.ConfigCtx, c *envoy_api_v2_auth.CommonTlsContext) (bind.TLS, error) {
 
-	tls := []string{}
+	merge := []bind.TLS{}
 	for _, tlsCertificateSdsSecretConfig := range c.TlsCertificateSdsSecretConfigs {
-		name, err := Convert_api_v2_auth_SdsSecretConfig(conf, tlsCertificateSdsSecretConfig)
+		tls, err := Convert_api_v2_auth_SdsSecretConfig(conf, tlsCertificateSdsSecretConfig)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		if name != "" {
-			tls = append(tls, name)
+		if tls != nil {
+			merge = append(merge, tls)
 		}
 	}
 
 	switch t := c.ValidationContextType.(type) {
 	case *envoy_api_v2_auth.CommonTlsContext_ValidationContext:
-		name, err := Convert_api_v2_auth_CertificateValidationContext(conf, t.ValidationContext)
+		tls, err := Convert_api_v2_auth_CertificateValidationContext(conf, t.ValidationContext)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		if name != "" {
-			tls = append(tls, name)
+		if tls != nil {
+			merge = append(merge, tls)
 		}
 	case *envoy_api_v2_auth.CommonTlsContext_ValidationContextSdsSecretConfig:
-		name, err := Convert_api_v2_auth_SdsSecretConfig(conf, t.ValidationContextSdsSecretConfig)
+		tls, err := Convert_api_v2_auth_SdsSecretConfig(conf, t.ValidationContextSdsSecretConfig)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		if name != "" {
-			tls = append(tls, name)
+		if tls != nil {
+			merge = append(merge, tls)
 		}
 	case *envoy_api_v2_auth.CommonTlsContext_CombinedValidationContext:
-		name, err := Convert_api_v2_auth_CommonTlsContext_CombinedCertificateValidationContext(conf, t.CombinedValidationContext)
+		tls, err := Convert_api_v2_auth_CommonTlsContext_CombinedCertificateValidationContext(conf, t.CombinedValidationContext)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		if name != "" {
-			tls = append(tls, name)
+		if tls != nil {
+			merge = append(merge, tls)
 		}
-		return "", nil
+		return nil, nil
 	}
 
-	tlsRef := make([]json.RawMessage, 0, len(tls))
-	for _, t := range tls {
-		tr, err := config.MarshalRef(t)
-		if err != nil {
-			return "", err
-		}
-		tlsRef = append(tlsRef, tr)
-	}
-
-	d, err := config.MarshalKindTlsMergep(tlsRef)
+	ref, err := conf.RegisterComponents("", bind.TLSMergeConfig{Merge: merge})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return conf.RegisterComponents("", d)
+
+	return bind.RefTLS(ref), nil
 
 }
