@@ -31,12 +31,12 @@ github.com/wzshiming/lockfile v0.0.5/go.mod h1:vhWLDg1zBZYjo0UGrKCzCa8V+exb/6pq3
 github.com/wzshiming/namecase v0.0.0-20191212122028-041c69d82ef7 h1:UxS/6q4K2p41moiUZiyg8juxwJaZVt+TIBwSRw5+Z5c=
 github.com/wzshiming/namecase v0.0.0-20191212122028-041c69d82ef7/go.mod h1:q3P1U6voOD8f/qupop2s7rFCYotZHayowv3UqVj1hBQ=
 github.com/wzshiming/notify v0.0.5/go.mod h1:SFhsQKZJznzsDcj/Qfo9A65k5IRcpUrpgbLRzZEa/DI=
-github.com/wzshiming/pipe v0.0.7 h1:qFkP8NizPzu2a2ETgaHP4LAsMZLB7nLYF0ZVQv+yl5E=
-github.com/wzshiming/pipe v0.0.7/go.mod h1:2J75qvT8hVDs7nQkH+u7OmJdoHNgcZY8WXDJgb/hFc4=
+github.com/wzshiming/pipe v0.0.9 h1:kUrqNFf1XMpQPwRwtYm9Ehp4ckmTA5Kp13Oi25NRBag=
+github.com/wzshiming/pipe v0.0.9/go.mod h1:2J75qvT8hVDs7nQkH+u7OmJdoHNgcZY8WXDJgb/hFc4=
 github.com/wzshiming/trie v0.0.1 h1:6xnhRyO5tZWR6aKjEpFfm8KSNNHYsNbpKrY1+NdyHME=
 github.com/wzshiming/trie v0.0.1/go.mod h1:Z20IrQFTHnjWz//dssIoiEPWInBZFyuFlPOFPxV0Rec=
-golang.org/x/crypto v0.0.0-20200210222208-86ce3cb69678 h1:wCWoJcFExDgyYx2m2hpHgwz8W3+FPdfldvIgzqDIhyg=
-golang.org/x/crypto v0.0.0-20200210222208-86ce3cb69678/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
+golang.org/x/crypto v0.0.0-20200208060501-ecb85df21340 h1:KOcEaR10tFr7gdJV2GCKw8Os5yED1u1aOqHjOAb6d2Y=
+golang.org/x/crypto v0.0.0-20200208060501-ecb85df21340/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 golang.org/x/lint v0.0.0-20200130185559-910be7a94367/go.mod h1:3xt1FjdF8hUf6vQPIChWIBhFzV8gjjsPE/fR3IyQdNY=
 golang.org/x/mod v0.1.1-0.20191105210325-c90efee705ee/go.mod h1:QqPTAvyqsEbceGzBzNggFXnrqF1CaUcvgkdR5Ot7KZg=
 golang.org/x/net v0.0.0-20200202094626-16171245cfb2 h1:CCH4IOTTfewWjGOlSp+zGcjutRKlBEZQ6wTn8ozI/nI=

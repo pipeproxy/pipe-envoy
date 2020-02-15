@@ -7,7 +7,7 @@ require (
 	github.com/golang/protobuf v1.3.3
 	github.com/spf13/pflag v1.0.5
 	github.com/wzshiming/gotype v0.6.3
-	github.com/wzshiming/pipe v0.0.7
+	github.com/wzshiming/pipe v0.0.9
 	google.golang.org/grpc v1.27.0
 	sigs.k8s.io/yaml v1.1.0
 )
@@ -15,7 +15,7 @@ require (
 replace (
 	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.9.2
 	github.com/golang/protobuf => github.com/golang/protobuf v1.3.3
-	golang.org/x/crypto => golang.org/x/crypto v0.0.0-20200210222208-86ce3cb69678
+	golang.org/x/crypto => golang.org/x/crypto v0.0.0-20200208060501-ecb85df21340
 	golang.org/x/lint => golang.org/x/lint v0.0.0-20200130185559-910be7a94367
 	golang.org/x/net => golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 	golang.org/x/sync => golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
