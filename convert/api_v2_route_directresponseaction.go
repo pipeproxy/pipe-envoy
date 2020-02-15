@@ -6,13 +6,13 @@ import (
 	"github.com/wzshiming/envoy/config"
 )
 
-func Convert_api_v2_route_DirectResponseAction(conf *config.ConfigCtx, c *envoy_api_v2_route.DirectResponseAction) (bind.HttpHandler, error) {
+func Convert_api_v2_route_DirectResponseAction(conf *config.ConfigCtx, c *envoy_api_v2_route.DirectResponseAction) (bind.HTTPHandler, error) {
 	body, err := Convert_api_v2_core_DataSource(conf, c.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	d := bind.HttpHandlerDirectConfig{
+	d := bind.HTTPHandlerDirectConfig{
 		Code: int(c.Status),
 		Body: body,
 	}
@@ -22,5 +22,5 @@ func Convert_api_v2_route_DirectResponseAction(conf *config.ConfigCtx, c *envoy_
 		return nil, err
 	}
 
-	return bind.RefHttpHandler(ref), nil
+	return bind.RefHTTPHandler(ref), nil
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/wzshiming/envoy/config"
 )
 
-func Convert_config_accesslog_v2_CommonGrpcAccessLogConfig(conf *config.ConfigCtx, c *envoy_config_accesslog_v2.CommonGrpcAccessLogConfig, handler bind.HttpHandler) (bind.HttpHandler, error) {
+func Convert_config_accesslog_v2_CommonGrpcAccessLogConfig(conf *config.ConfigCtx, c *envoy_config_accesslog_v2.CommonGrpcAccessLogConfig, handler bind.HTTPHandler) (bind.HTTPHandler, error) {
 
 	dialer, err := Convert_api_v2_core_GrpcService(conf, c.GrpcService)
 	if err != nil {
@@ -28,7 +28,7 @@ func Convert_config_accesslog_v2_CommonGrpcAccessLogConfig(conf *config.ConfigCt
 		return nil, err
 	}
 
-	r := bind.HttpHandlerAccessLogConfig{
+	r := bind.HTTPHandlerAccessLogConfig{
 		AccessLog: bind.RefOnce(name),
 		Handler:   handler,
 	}
@@ -38,5 +38,5 @@ func Convert_config_accesslog_v2_CommonGrpcAccessLogConfig(conf *config.ConfigCt
 		return nil, err
 	}
 
-	return bind.RefHttpHandler(ref), nil
+	return bind.RefHTTPHandler(ref), nil
 }

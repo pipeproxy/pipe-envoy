@@ -28,7 +28,7 @@ func Convert_api_v2_Listener(conf *config.ConfigCtx, c *envoy_api_v2.Listener) (
 		multi = append(multi, handler)
 	}
 
-	d := bind.ServiceServerConfig{
+	d := bind.ServiceStreamConfig{
 		Listener: listener,
 		Handler: bind.StreamHandlerMultiConfig{
 			Multi: multi,

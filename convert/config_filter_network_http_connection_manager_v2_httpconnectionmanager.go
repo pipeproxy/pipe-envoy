@@ -8,7 +8,7 @@ import (
 )
 
 func Convert_config_filter_network_http_connection_manager_v2_HttpConnectionManager(conf *config.ConfigCtx, c *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager, tls bind.TLS) (bind.StreamHandler, error) {
-	var route bind.HttpHandler
+	var route bind.HTTPHandler
 	switch r := c.RouteSpecifier.(type) {
 	case *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager_Rds:
 		handler, err := Convert_config_filter_network_http_connection_manager_v2_Rds(conf, r.Rds)
@@ -35,7 +35,7 @@ func Convert_config_filter_network_http_connection_manager_v2_HttpConnectionMana
 		route = n
 	}
 
-	d := bind.StreamHandlerHttpConfig{
+	d := bind.StreamHandlerHTTPConfig{
 		Handler: route,
 		TLS:     tls,
 	}

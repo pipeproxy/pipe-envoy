@@ -12,10 +12,10 @@ func Convert_config_bootstrap_v2_Admin(conf *config.ConfigCtx, c *envoy_config_b
 		return nil, err
 	}
 
-	d := bind.ServiceServerConfig{
+	d := bind.ServiceStreamConfig{
 		Listener: listener,
-		Handler: bind.StreamHandlerHttpConfig{
-			Handler: bind.HttpHandlerLogConfig{
+		Handler: bind.StreamHandlerHTTPConfig{
+			Handler: bind.HTTPHandlerLogConfig{
 				Output:  bind.OutputFileConfig{Path: c.AccessLogPath},
 				Handler: adminHandler,
 			},
@@ -35,28 +35,28 @@ func Convert_config_bootstrap_v2_Admin(conf *config.ConfigCtx, c *envoy_config_b
 	return bind.RefService(ref), nil
 }
 
-var adminHandler = bind.HttpHandlerMuxConfig{
-	Routes: []bind.HttpHandlerMuxRoute{
+var adminHandler = bind.HTTPHandlerMuxConfig{
+	Routes: []bind.HTTPHandlerMuxRoute{
 		{
 			Path:    "/expvar/",
-			Handler: bind.HttpHandlerExpvar{},
+			Handler: bind.HTTPHandlerExpvar{},
 		},
 		{
 			Prefix:  "/pprof/",
-			Handler: bind.HttpHandlerPprof{},
+			Handler: bind.HTTPHandlerPprof{},
 		},
 		{
 			Prefix:  "/config_dump/",
-			Handler: bind.HttpHandlerConfigDump{},
+			Handler: bind.HTTPHandlerConfigDump{},
 		},
 	},
-	NotFound: bind.HttpHandlerMultiConfig{
-		Multi: []bind.HttpHandler{
-			bind.HttpHandlerAddResponseHeaderConfig{
+	NotFound: bind.HTTPHandlerMultiConfig{
+		Multi: []bind.HTTPHandler{
+			bind.HTTPHandlerAddResponseHeaderConfig{
 				Key:   "Content-Type",
 				Value: "text/html; charset=utf-8",
 			},
-			bind.HttpHandlerDirectConfig{
+			bind.HTTPHandlerDirectConfig{
 				Code: 200,
 				Body: bind.InputInlineConfig{
 					Data: `

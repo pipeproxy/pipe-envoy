@@ -7,11 +7,11 @@ import (
 	"github.com/wzshiming/envoy/internal/logger"
 )
 
-func Convert_api_v2_core_GrpcService(conf *config.ConfigCtx, c *envoy_api_v2_core.GrpcService) (bind.Dialer, error) {
+func Convert_api_v2_core_GrpcService(conf *config.ConfigCtx, c *envoy_api_v2_core.GrpcService) (bind.StreamDialer, error) {
 	switch t := c.TargetSpecifier.(type) {
 	case *envoy_api_v2_core.GrpcService_EnvoyGrpc_:
 		clusterName := t.EnvoyGrpc.ClusterName
-		return bind.RefDialer(config.XdsName(clusterName)), nil
+		return bind.RefStreamDialer(config.XdsName(clusterName)), nil
 	case *envoy_api_v2_core.GrpcService_GoogleGrpc_:
 	}
 	logger.Todof("%#v", c)

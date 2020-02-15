@@ -6,8 +6,8 @@ import (
 	"github.com/wzshiming/envoy/config"
 )
 
-func Convert_api_v2_RouteConfiguration(conf *config.ConfigCtx, c *envoy_api_v2.RouteConfiguration) (bind.HttpHandler, error) {
-	handlers := []bind.HttpHandler{}
+func Convert_api_v2_RouteConfiguration(conf *config.ConfigCtx, c *envoy_api_v2.RouteConfiguration) (bind.HTTPHandler, error) {
+	handlers := []bind.HTTPHandler{}
 	for _, virtualHost := range c.VirtualHosts {
 		handler, err := Convert_api_v2_route_VirtualHost(conf, virtualHost)
 		if err != nil {
@@ -16,7 +16,7 @@ func Convert_api_v2_RouteConfiguration(conf *config.ConfigCtx, c *envoy_api_v2.R
 		handlers = append(handlers, handler)
 	}
 
-	d := bind.HttpHandlerPollerConfig{
+	d := bind.HTTPHandlerPollerConfig{
 		Poller:   "round_robin",
 		Handlers: handlers,
 	}
@@ -28,5 +28,5 @@ func Convert_api_v2_RouteConfiguration(conf *config.ConfigCtx, c *envoy_api_v2.R
 		return nil, err
 	}
 
-	return bind.RefHttpHandler(ref), nil
+	return bind.RefHTTPHandler(ref), nil
 }

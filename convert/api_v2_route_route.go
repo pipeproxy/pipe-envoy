@@ -7,8 +7,8 @@ import (
 	"github.com/wzshiming/envoy/internal/logger"
 )
 
-func Convert_api_v2_route_Route(conf *config.ConfigCtx, c *envoy_api_v2_route.Route) (bind.HttpHandlerMuxRoute, string, error) {
-	r := bind.HttpHandlerMuxRoute{}
+func Convert_api_v2_route_Route(conf *config.ConfigCtx, c *envoy_api_v2_route.Route) (bind.HTTPHandlerMuxRoute, string, error) {
+	r := bind.HTTPHandlerMuxRoute{}
 	switch p := c.Match.PathSpecifier.(type) {
 	case *envoy_api_v2_route.RouteMatch_Prefix:
 		r.Prefix = p.Prefix
@@ -21,7 +21,7 @@ func Convert_api_v2_route_Route(conf *config.ConfigCtx, c *envoy_api_v2_route.Ro
 		return r, "", nil
 	}
 
-	var handler bind.HttpHandler
+	var handler bind.HTTPHandler
 	switch a := c.Action.(type) {
 	case *envoy_api_v2_route.Route_Route:
 		handle, err := Convert_api_v2_route_RouteAction(conf, a.Route)

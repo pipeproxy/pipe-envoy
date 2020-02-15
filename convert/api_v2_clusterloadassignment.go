@@ -6,8 +6,8 @@ import (
 	"github.com/wzshiming/envoy/config"
 )
 
-func Convert_api_v2_ClusterLoadAssignment(conf *config.ConfigCtx, c *envoy_api_v2.ClusterLoadAssignment) (bind.Dialer, error) {
-	dialers := []bind.Dialer{}
+func Convert_api_v2_ClusterLoadAssignment(conf *config.ConfigCtx, c *envoy_api_v2.ClusterLoadAssignment) (bind.StreamDialer, error) {
+	dialers := []bind.StreamDialer{}
 	for _, endpoint := range c.Endpoints {
 		dialer, err := Convert_api_v2_endpoint_LocalityLbEndpoints(conf, endpoint)
 		if err != nil {
@@ -17,7 +17,7 @@ func Convert_api_v2_ClusterLoadAssignment(conf *config.ConfigCtx, c *envoy_api_v
 		dialers = append(dialers, dialer)
 	}
 
-	d := bind.DialerPollerConfig{
+	d := bind.StreamDialerPollerConfig{
 		Poller:  "round_robin",
 		Dialers: dialers,
 	}
@@ -27,5 +27,5 @@ func Convert_api_v2_ClusterLoadAssignment(conf *config.ConfigCtx, c *envoy_api_v
 		return nil, err
 	}
 
-	return bind.RefDialer(ref), nil
+	return bind.RefStreamDialer(ref), nil
 }

@@ -6,15 +6,15 @@ import (
 	"github.com/wzshiming/envoy/config"
 )
 
-func Convert_config_filter_network_http_connection_manager_v2_Rds(conf *config.ConfigCtx, c *envoy_config_filter_network_http_connection_manager_v2.Rds) (bind.HttpHandler, error) {
+func Convert_config_filter_network_http_connection_manager_v2_Rds(conf *config.ConfigCtx, c *envoy_config_filter_network_http_connection_manager_v2.Rds) (bind.HTTPHandler, error) {
 	name := c.RouteConfigName
 	if name != "" {
 		conf.AppendRDS(name)
-		return bind.RefHttpHandler(config.XdsName(name)), nil
+		return bind.RefHTTPHandler(config.XdsName(name)), nil
 	}
 	ref, err := Convert_api_v2_core_ConfigSource(conf, c.ConfigSource)
 	if err != nil {
 		return nil, err
 	}
-	return bind.RefHttpHandler(ref), nil
+	return bind.RefHTTPHandler(ref), nil
 }

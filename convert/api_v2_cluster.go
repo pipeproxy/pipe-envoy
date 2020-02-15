@@ -7,7 +7,7 @@ import (
 	"github.com/wzshiming/envoy/internal/logger"
 )
 
-func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (bind.Dialer, error) {
+func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (bind.StreamDialer, error) {
 
 	var tls bind.TLS
 	if c.TransportSocket != nil {
@@ -25,7 +25,7 @@ func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (bi
 	}
 
 	if c.ClusterDiscoveryType == nil {
-		dialers := []bind.Dialer{}
+		dialers := []bind.StreamDialer{}
 		for _, host := range c.Hosts {
 			dialer, err := Convert_api_v2_core_AddressDialer(conf, host)
 			if err != nil {
@@ -34,12 +34,12 @@ func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (bi
 			dialers = append(dialers, dialer)
 		}
 
-		var d bind.Dialer = bind.DialerPollerConfig{
+		var d bind.StreamDialer = bind.StreamDialerPollerConfig{
 			Poller:  "round_robin",
 			Dialers: dialers,
 		}
 		if tls != nil {
-			d = bind.DialerTlsConfig{
+			d = bind.StreamDialerTLSConfig{
 				Dialer: d,
 				TLS:    tls,
 			}
@@ -50,7 +50,7 @@ func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (bi
 			return nil, err
 		}
 
-		return bind.RefDialer(ref), nil
+		return bind.RefStreamDialer(ref), nil
 	}
 
 	switch d := c.ClusterDiscoveryType.(type) {
@@ -61,9 +61,9 @@ func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (bi
 			if name != "" {
 				conf.AppendEDS(name)
 
-				var d bind.Dialer = bind.RefDialer(config.XdsName(name))
+				var d bind.StreamDialer = bind.RefStreamDialer(config.XdsName(name))
 				if tls != nil {
-					d = bind.DialerTlsConfig{
+					d = bind.StreamDialerTLSConfig{
 						Dialer: d,
 						TLS:    tls,
 					}
@@ -74,7 +74,7 @@ func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (bi
 					return nil, err
 				}
 
-				return bind.RefDialer(ref), nil
+				return bind.RefStreamDialer(ref), nil
 			}
 		}
 	case *envoy_api_v2.Cluster_ClusterType:

@@ -10,13 +10,13 @@ import (
 	"github.com/wzshiming/envoy/internal/logger"
 )
 
-func Convert_api_v2_core_AddressDialer(conf *config.ConfigCtx, c *envoy_api_v2_core.Address) (bind.Dialer, error) {
+func Convert_api_v2_core_AddressDialer(conf *config.ConfigCtx, c *envoy_api_v2_core.Address) (bind.StreamDialer, error) {
 	network, address, err := convertAddress(c)
 	if err != nil {
 		return nil, err
 	}
 
-	d := bind.DialerNetworkConfig{
+	d := bind.StreamDialerNetworkConfig{
 		Network: network,
 		Address: address,
 	}
@@ -26,16 +26,16 @@ func Convert_api_v2_core_AddressDialer(conf *config.ConfigCtx, c *envoy_api_v2_c
 		return nil, err
 	}
 
-	return bind.RefDialer(ref), nil
+	return bind.RefStreamDialer(ref), nil
 }
 
-func Convert_api_v2_core_AddressListener(conf *config.ConfigCtx, c *envoy_api_v2_core.Address) (bind.ListenerListenConfig, error) {
+func Convert_api_v2_core_AddressListener(conf *config.ConfigCtx, c *envoy_api_v2_core.Address) (bind.StreamListenConfig, error) {
 	network, address, err := convertAddress(c)
 	if err != nil {
 		return nil, err
 	}
 
-	d := bind.ListenerListenConfigNetworkConfig{
+	d := bind.StreamListenConfigNetworkConfig{
 		Network: network,
 		Address: address,
 	}
@@ -45,7 +45,7 @@ func Convert_api_v2_core_AddressListener(conf *config.ConfigCtx, c *envoy_api_v2
 		return nil, err
 	}
 
-	return bind.RefListenerListenConfig(ref), nil
+	return bind.RefStreamListenConfig(ref), nil
 }
 
 func convertAddress(c *envoy_api_v2_core.Address) (string, string, error) {

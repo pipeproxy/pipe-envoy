@@ -14,11 +14,11 @@ func Convert_config_filter_network_tcp_proxy_v2_TcpProxy(conf *config.ConfigCtx,
 		case *envoy_config_filter_network_tcp_proxy_v2.TcpProxy_Cluster:
 
 			var d bind.StreamHandler = bind.StreamHandlerForwardConfig{
-				Dialer: bind.RefDialer(config.XdsName(s.Cluster)),
+				Dialer: bind.RefStreamDialer(config.XdsName(s.Cluster)),
 			}
 
 			if tls != nil {
-				d = bind.StreamHandlerTlsDownConfig{
+				d = bind.StreamHandlerTLSDownConfig{
 					Handler: d,
 					TLS:     tls,
 				}

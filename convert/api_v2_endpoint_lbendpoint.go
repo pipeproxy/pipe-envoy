@@ -7,12 +7,12 @@ import (
 	"github.com/wzshiming/envoy/internal/logger"
 )
 
-func Convert_api_v2_endpoint_LbEndpoint(conf *config.ConfigCtx, c *envoy_api_v2_endpoint.LbEndpoint) (bind.Dialer, error) {
+func Convert_api_v2_endpoint_LbEndpoint(conf *config.ConfigCtx, c *envoy_api_v2_endpoint.LbEndpoint) (bind.StreamDialer, error) {
 	switch h := c.HostIdentifier.(type) {
 	case *envoy_api_v2_endpoint.LbEndpoint_Endpoint:
 		return Convert_api_v2_core_AddressDialer(conf, h.Endpoint.Address)
 	case *envoy_api_v2_endpoint.LbEndpoint_EndpointName:
-		return bind.RefDialer(config.XdsName(h.EndpointName)), nil
+		return bind.RefStreamDialer(config.XdsName(h.EndpointName)), nil
 	}
 
 	logger.Todof("%#v", c)

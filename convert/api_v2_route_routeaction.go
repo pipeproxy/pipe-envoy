@@ -7,7 +7,7 @@ import (
 	"github.com/wzshiming/envoy/internal/logger"
 )
 
-func Convert_api_v2_route_RouteAction(conf *config.ConfigCtx, c *envoy_api_v2_route.RouteAction) (bind.HttpHandler, error) {
+func Convert_api_v2_route_RouteAction(conf *config.ConfigCtx, c *envoy_api_v2_route.RouteAction) (bind.HTTPHandler, error) {
 	name := ""
 	switch s := c.ClusterSpecifier.(type) {
 	case *envoy_api_v2_route.RouteAction_Cluster:
@@ -20,8 +20,8 @@ func Convert_api_v2_route_RouteAction(conf *config.ConfigCtx, c *envoy_api_v2_ro
 		return nil, nil
 	}
 
-	d := bind.HttpHandlerForwardConfig{
-		Dialer: bind.RefDialer(config.XdsName(name)),
+	d := bind.HTTPHandlerForwardConfig{
+		Dialer: bind.RefStreamDialer(config.XdsName(name)),
 		Pass:   "http://" + name,
 	}
 
@@ -30,5 +30,5 @@ func Convert_api_v2_route_RouteAction(conf *config.ConfigCtx, c *envoy_api_v2_ro
 		return nil, err
 	}
 
-	return bind.RefHttpHandler(ref), nil
+	return bind.RefHTTPHandler(ref), nil
 }

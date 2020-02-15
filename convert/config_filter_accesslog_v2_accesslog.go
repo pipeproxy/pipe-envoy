@@ -12,7 +12,7 @@ import (
 	"github.com/wzshiming/envoy/wellknown"
 )
 
-func Convert_config_filter_accesslog_v2_AccessLog(conf *config.ConfigCtx, c *envoy_config_filter_accesslog_v2.AccessLog, handler bind.HttpHandler) (bind.HttpHandler, error) {
+func Convert_config_filter_accesslog_v2_AccessLog(conf *config.ConfigCtx, c *envoy_config_filter_accesslog_v2.AccessLog, handler bind.HTTPHandler) (bind.HTTPHandler, error) {
 	var filterConfig proto.Message
 	switch t := c.ConfigType.(type) {
 	case *envoy_config_filter_accesslog_v2.AccessLog_TypedConfig:
@@ -34,7 +34,7 @@ func Convert_config_filter_accesslog_v2_AccessLog(conf *config.ConfigCtx, c *env
 	case wellknown.FileAccessLog:
 		switch f := filterConfig.(type) {
 		case *envoy_config_accesslog_v2.FileAccessLog:
-			d := bind.HttpHandlerLogConfig{
+			d := bind.HTTPHandlerLogConfig{
 				Output:  bind.OutputFileConfig{Path: f.Path},
 				Handler: handler,
 			}
@@ -44,7 +44,7 @@ func Convert_config_filter_accesslog_v2_AccessLog(conf *config.ConfigCtx, c *env
 				return nil, err
 			}
 
-			return bind.RefHttpHandler(ref), nil
+			return bind.RefHTTPHandler(ref), nil
 		}
 	}
 	logger.Todof("%#v", c)
