@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/wzshiming/envoy/once/access_log"
-	"github.com/wzshiming/pipe/configure/manager"
-	"github.com/wzshiming/pipe/once"
+	"github.com/wzshiming/envoy/pipe/once/access_log"
+	"github.com/wzshiming/pipe/configure/decode"
+	"github.com/wzshiming/pipe/pipe/once"
 )
 
 const (
@@ -14,7 +14,7 @@ const (
 )
 
 func init() {
-	manager.Register(name, NewAccessLogWithConfig)
+	decode.Register(name, NewAccessLogWithConfig)
 }
 
 type Config struct {

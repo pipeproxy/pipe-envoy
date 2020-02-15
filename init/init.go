@@ -3,11 +3,11 @@ package init
 import (
 	_ "github.com/wzshiming/pipe/init"
 
-	_ "github.com/wzshiming/envoy/http/access_log"
-	_ "github.com/wzshiming/envoy/once/access_log"
-	_ "github.com/wzshiming/envoy/once/ads"
-	_ "github.com/wzshiming/envoy/once/xds"
-	_ "github.com/wzshiming/envoy/service/none"
-	_ "github.com/wzshiming/envoy/tls/merge"
-	_ "github.com/wzshiming/envoy/tls/validation"
+	_ "github.com/wzshiming/envoy/pipe/http/access_log"
+	_ "github.com/wzshiming/envoy/pipe/once/access_log"
+	_ "github.com/wzshiming/envoy/pipe/once/ads"
+	_ "github.com/wzshiming/envoy/pipe/once/xds"
+	_ "github.com/wzshiming/envoy/pipe/service/none"
+	_ "github.com/wzshiming/envoy/pipe/tls/merge"
+	_ "github.com/wzshiming/envoy/pipe/tls/validation"
 )

@@ -8,9 +8,9 @@ import (
 	"github.com/wzshiming/envoy/config"
 	"github.com/wzshiming/envoy/internal/client/ads"
 	"github.com/wzshiming/envoy/internal/node"
-	"github.com/wzshiming/pipe/configure/manager"
-	"github.com/wzshiming/pipe/dialer"
-	"github.com/wzshiming/pipe/once"
+	"github.com/wzshiming/pipe/configure/decode"
+	"github.com/wzshiming/pipe/pipe/once"
+	"github.com/wzshiming/pipe/pipe/stream/dialer"
 )
 
 const (
@@ -18,7 +18,7 @@ const (
 )
 
 func init() {
-	manager.Register(name, NewADSWithConfig)
+	decode.Register(name, NewADSWithConfig)
 }
 
 type Config struct {
@@ -39,7 +39,7 @@ func NewADSWithConfig(ctx context.Context, conf *Config) (once.Once, error) {
 			NodeID: conf.NodeID,
 		},
 		ContextDialer: func(ctx context.Context, s string) (conn net.Conn, err error) {
-			return conf.Dialer.Dial(ctx)
+			return conf.Dialer.DialStream(ctx)
 		},
 	}
 

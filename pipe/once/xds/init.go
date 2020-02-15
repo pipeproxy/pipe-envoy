@@ -3,9 +3,9 @@ package xds
 import (
 	"fmt"
 
-	"github.com/wzshiming/envoy/once/ads"
-	"github.com/wzshiming/pipe/configure/manager"
-	"github.com/wzshiming/pipe/once"
+	"github.com/wzshiming/envoy/pipe/once/ads"
+	"github.com/wzshiming/pipe/configure/decode"
+	"github.com/wzshiming/pipe/pipe/once"
 )
 
 const (
@@ -13,7 +13,7 @@ const (
 )
 
 func init() {
-	manager.Register(name, NewXDSWithConfig)
+	decode.Register(name, NewXDSWithConfig)
 }
 
 type Config struct {

@@ -3,15 +3,15 @@ package validation
 import (
 	"io/ioutil"
 
-	"github.com/wzshiming/pipe/configure/manager"
-	"github.com/wzshiming/pipe/input"
-	"github.com/wzshiming/pipe/tls"
+	"github.com/wzshiming/pipe/configure/decode"
+	"github.com/wzshiming/pipe/pipe/stdio/input"
+	"github.com/wzshiming/pipe/pipe/tls"
 )
 
 const name = "validation"
 
 func init() {
-	manager.Register(name, NewValidationWithConfig)
+	decode.Register(name, NewValidationWithConfig)
 }
 
 type Config struct {

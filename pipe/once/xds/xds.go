@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/wzshiming/envoy/once/ads"
+	"github.com/wzshiming/envoy/pipe/once/ads"
 )
 
 type XDS struct {
