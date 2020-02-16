@@ -24,7 +24,31 @@ func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (bi
 		tls = t
 	}
 
-	if c.ClusterDiscoveryType == nil {
+	var d bind.StreamDialer
+
+	switch {
+	case c.LoadAssignment != nil:
+		dialer, err := Convert_api_v2_ClusterLoadAssignment(conf, c.LoadAssignment)
+		if err != nil {
+			return nil, err
+		}
+		d = dialer
+	case c.ClusterDiscoveryType != nil:
+		switch t := c.ClusterDiscoveryType.(type) {
+		case *envoy_api_v2.Cluster_Type:
+			switch t.Type {
+			case envoy_api_v2.Cluster_EDS:
+				name := c.Name
+				if name != "" {
+					conf.AppendEDS(name)
+					d = bind.RefStreamDialer(config.XdsName(name))
+				}
+			}
+		case *envoy_api_v2.Cluster_ClusterType:
+			logger.Todof("%#v", c)
+			return nil, nil
+		}
+	default:
 		dialers := []bind.StreamDialer{}
 		for _, host := range c.Hosts {
 			dialer, err := Convert_api_v2_core_AddressDialer(conf, host)
@@ -33,53 +57,26 @@ func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (bi
 			}
 			dialers = append(dialers, dialer)
 		}
-
-		var d bind.StreamDialer = bind.StreamDialerPollerConfig{
+		d = bind.StreamDialerPollerConfig{
 			Poller:  "round_robin",
 			Dialers: dialers,
 		}
-		if tls != nil {
-			d = bind.StreamDialerTLSConfig{
-				Dialer: d,
-				TLS:    tls,
-			}
-		}
+	}
 
+	if tls != nil {
+		d = bind.StreamDialerTLSConfig{
+			Dialer: d,
+			TLS:    tls,
+		}
+	}
+
+	if c.Name != "" {
 		ref, err := conf.RegisterComponents(config.XdsName(c.Name), d)
 		if err != nil {
 			return nil, err
 		}
-
-		return bind.RefStreamDialer(ref), nil
+		d = bind.RefStreamDialer(ref)
 	}
 
-	switch d := c.ClusterDiscoveryType.(type) {
-	case *envoy_api_v2.Cluster_Type:
-		switch d.Type {
-		case envoy_api_v2.Cluster_EDS:
-			name := c.Name
-			if name != "" {
-				conf.AppendEDS(name)
-
-				var d bind.StreamDialer = bind.RefStreamDialer(config.XdsName(name))
-				if tls != nil {
-					d = bind.StreamDialerTLSConfig{
-						Dialer: d,
-						TLS:    tls,
-					}
-				}
-
-				ref, err := conf.RegisterComponents("", d)
-				if err != nil {
-					return nil, err
-				}
-
-				return bind.RefStreamDialer(ref), nil
-			}
-		}
-	case *envoy_api_v2.Cluster_ClusterType:
-	}
-
-	logger.Todof("%#v", c)
-	return nil, nil
+	return d, nil
 }

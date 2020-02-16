@@ -165,21 +165,23 @@ func (c *ConfigCtx) RegisterComponents(name string, d bind.PipeComponent) (strin
 	c.mut.Lock()
 	defer c.mut.Unlock()
 
-	if name == "" {
-		n, raw, err := marshalName(name, d)
-		if err != nil {
-			return "", err
-		}
-		name = n
-		d = bind.RawPipeComponent(raw)
+	n, raw, err := marshalName(d)
+	if err != nil {
+		return "", err
 	}
 
 	d = bind.NamePipeComponent{
-		Name:          name,
-		PipeComponent: d,
+		Name:          n,
+		PipeComponent: bind.RawPipeComponent(raw),
 	}
-	c.componentMap[name] = d
-	return name, nil
+	c.componentMap[n] = d
+	if name != "" {
+		c.componentMap[name] = bind.NamePipeComponent{
+			Name:          name,
+			PipeComponent: bind.RefPipeComponent(n),
+		}
+	}
+	return n, nil
 }
 
 func (c *ConfigCtx) RegisterService(name string) error {
@@ -203,14 +205,13 @@ func (c *ConfigCtx) RegisterInit(d bind.Once) (string, error) {
 	return "", nil
 }
 
-func marshalName(name string, m json.Marshaler) (string, json.RawMessage, error) {
+func marshalName(m json.Marshaler) (string, json.RawMessage, error) {
 	d, err := m.MarshalJSON()
 	if err != nil {
 		return "", nil, err
 	}
 	hash := md5.Sum(d)
-	name = "auto@" + hex.EncodeToString(hash[:])
-
+	name := "auto@" + hex.EncodeToString(hash[:])
 	return name, d, nil
 }
 

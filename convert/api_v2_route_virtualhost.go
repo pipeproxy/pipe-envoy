@@ -21,7 +21,7 @@ func Convert_api_v2_route_VirtualHost(conf *config.ConfigCtx, c *envoy_api_v2_ro
 		NotFound: nil,
 	}
 
-	name := config.XdsName(c.Name + ".virtual-host")
+	name := config.XdsName(c.Name)
 	ref, err := conf.RegisterComponents(name, d)
 	if err != nil {
 		return nil, err

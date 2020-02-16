@@ -17,15 +17,18 @@ func Convert_api_v2_ClusterLoadAssignment(conf *config.ConfigCtx, c *envoy_api_v
 		dialers = append(dialers, dialer)
 	}
 
-	d := bind.StreamDialerPollerConfig{
+	var d bind.StreamDialer
+	d = bind.StreamDialerPollerConfig{
 		Poller:  "round_robin",
 		Dialers: dialers,
 	}
 
-	ref, err := conf.RegisterComponents(config.XdsName(c.ClusterName), d)
-	if err != nil {
-		return nil, err
+	if c.ClusterName != "" {
+		ref, err := conf.RegisterComponents(config.XdsName(c.ClusterName), d)
+		if err != nil {
+			return nil, err
+		}
+		d = bind.RefStreamDialer(ref)
 	}
-
-	return bind.RefStreamDialer(ref), nil
+	return d, nil
 }
