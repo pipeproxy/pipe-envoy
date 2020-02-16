@@ -1594,32 +1594,6 @@ func (m RefStreamListenConfig) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("{\"@Ref\":%q}", m)), nil
 }
 
-// StreamListenConfigMultiConfig github.com/wzshiming/pipe/pipe/stream/listener.ListenConfig@multi
-type StreamListenConfigMultiConfig struct {
-	Multi []StreamListenConfig
-}
-
-func (StreamListenConfigMultiConfig) isStreamListenConfig() {}
-func (StreamListenConfigMultiConfig) isPipeComponent()      {}
-
-// MarshalJSON returns m as the JSON encoding of m.
-func (m StreamListenConfigMultiConfig) MarshalJSON() ([]byte, error) {
-	const kind = "github.com/wzshiming/pipe/pipe/stream/listener.ListenConfig@multi"
-	type t StreamListenConfigMultiConfig
-	data, err := json.Marshal(t(m))
-	if err != nil {
-		return nil, err
-	}
-	if data[0] == '{' {
-		if len(data) == 2 {
-			data = []byte(fmt.Sprintf("{\"@Kind\":%q}", kind))
-		} else {
-			data = append([]byte(fmt.Sprintf("{\"@Kind\":%q,", kind)), data[1:]...)
-		}
-	}
-	return data, nil
-}
-
 // StreamListenConfigNetworkConfig github.com/wzshiming/pipe/pipe/stream/listener.ListenConfig@network
 type StreamListenConfigNetworkConfig struct {
 	Network string
