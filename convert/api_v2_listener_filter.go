@@ -28,12 +28,12 @@ func Convert_api_v2_listener_Filter(conf *config.ConfigCtx, c *envoy_api_v2_list
 	}
 
 	switch c.Name {
-	case wellknown.HTTPConnectionManager:
+	case wellknown.HTTPConnectionManager, wellknown.HTTPConnectionManagerAlias:
 		switch p := filterConfig.(type) {
 		case *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager:
 			return Convert_config_filter_network_http_connection_manager_v2_HttpConnectionManager(conf, p, tls)
 		}
-	case wellknown.TCPProxy:
+	case wellknown.TCPProxy, wellknown.TCPProxyAlias:
 		switch p := filterConfig.(type) {
 		case *envoy_config_filter_network_tcp_proxy_v2.TcpProxy:
 			return Convert_config_filter_network_tcp_proxy_v2_TcpProxy(conf, p, tls)

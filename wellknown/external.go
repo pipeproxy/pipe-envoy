@@ -21,7 +21,8 @@ var (
 	ThriftProxy = origin.ThriftProxy
 
 	// TCPProxy network filter
-	TCPProxy = origin.TCPProxy
+	TCPProxy      = origin.TCPProxy
+	TCPProxyAlias = "envoy.filters.network.tcp_proxy"
 
 	// Statsd sink
 	Statsd = origin.Statsd
@@ -84,7 +85,8 @@ var (
 	HTTPExternalAuthorization = origin.HTTPExternalAuthorization
 
 	// HTTPConnectionManager network filter
-	HTTPConnectionManager = origin.HTTPConnectionManager
+	HTTPConnectionManager      = origin.HTTPConnectionManager
+	HTTPConnectionManagerAlias = "envoy.filters.network.http_connection_manager"
 
 	// Gzip HTTP filter
 	Gzip = origin.Gzip
