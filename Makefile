@@ -5,7 +5,7 @@ BINDIR  := bin
 #-----------------
 #-- e2e
 #-----------------
-.PHONY: $(BINDIR)/e2e $(BINDIR)/envoy integration integration.ads integration.xds integration.rest integration.ads.tls
+.PHONY: $(BINDIR)/e2e $(BINDIR)/envoy e2e e2e.ads e2e.xds e2e.rest e2e.ads.tls
 
 $(BINDIR)/e2e:
 	@go build -race -o $@ ./test/e2e
