@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	_ "github.com/wzshiming/envoy/init"
+	_ "github.com/wzshiming/pipe/init"
 
 	"github.com/wzshiming/pipe/build"
 	"github.com/wzshiming/pipe/configure/decode"

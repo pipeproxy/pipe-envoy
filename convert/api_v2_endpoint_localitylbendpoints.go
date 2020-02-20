@@ -18,7 +18,7 @@ func Convert_api_v2_endpoint_LocalityLbEndpoints(conf *config.ConfigCtx, c *envo
 	}
 
 	d := bind.StreamDialerPollerConfig{
-		Poller:  "round_robin",
+		Poller:  bind.StreamDialerPollerPollerEnumEnumRoundRobin,
 		Dialers: dialers,
 	}
 

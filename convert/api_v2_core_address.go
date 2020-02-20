@@ -17,7 +17,7 @@ func Convert_api_v2_core_AddressDialer(conf *config.ConfigCtx, c *envoy_api_v2_c
 	}
 
 	d := bind.StreamDialerNetworkConfig{
-		Network: network,
+		Network: bind.StreamDialerNetworkNetworkEnum(network),
 		Address: address,
 	}
 
@@ -36,7 +36,7 @@ func Convert_api_v2_core_AddressListener(conf *config.ConfigCtx, c *envoy_api_v2
 	}
 
 	d := bind.StreamListenConfigNetworkConfig{
-		Network: network,
+		Network: bind.StreamListenConfigNetworkNetworkEnum(network),
 		Address: address,
 	}
 

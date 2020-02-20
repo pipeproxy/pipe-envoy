@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
+	_ "github.com/wzshiming/envoy/init"
+	_ "github.com/wzshiming/pipe/init"
+
 	"github.com/spf13/pflag"
 	"github.com/wzshiming/envoy/config"
 	"github.com/wzshiming/envoy/convert"
-	_ "github.com/wzshiming/envoy/init"
 	"github.com/wzshiming/envoy/internal/logger"
 	"github.com/wzshiming/pipe"
 )
@@ -36,7 +38,6 @@ func main() {
 
 	ctx, conf, err := convertXDS(context.Background(), data)
 	if err != nil {
-		logger.Info(string(conf))
 		logger.Fatalln(err)
 	}
 

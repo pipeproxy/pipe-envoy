@@ -21,8 +21,10 @@ func Convert_api_v2_route_RouteAction(conf *config.ConfigCtx, c *envoy_api_v2_ro
 	}
 
 	d := bind.HTTPHandlerForwardConfig{
-		Dialer: bind.RefStreamDialer(config.XdsName(name)),
-		Pass:   "http://" + name,
+		RoundTripper: bind.HTTPRoundTripperTransportConfig{
+			Dialer: bind.RefStreamDialer(config.XdsName(name)),
+		},
+		URL: "http://" + name,
 	}
 
 	ref, err := conf.RegisterComponents("", d)

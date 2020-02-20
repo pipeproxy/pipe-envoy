@@ -1,8 +1,6 @@
 package init
 
 import (
-	_ "github.com/wzshiming/pipe/init"
-
 	_ "github.com/wzshiming/envoy/pipe/http/access_log"
 	_ "github.com/wzshiming/envoy/pipe/once/access_log"
 	_ "github.com/wzshiming/envoy/pipe/once/ads"

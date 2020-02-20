@@ -58,7 +58,7 @@ func Convert_api_v2_Cluster(conf *config.ConfigCtx, c *envoy_api_v2.Cluster) (bi
 			dialers = append(dialers, dialer)
 		}
 		d = bind.StreamDialerPollerConfig{
-			Poller:  "round_robin",
+			Poller:  bind.StreamDialerPollerPollerEnumEnumRoundRobin,
 			Dialers: dialers,
 		}
 	}
