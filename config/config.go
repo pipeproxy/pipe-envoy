@@ -1,244 +1,428 @@
 package config
 
 import (
+	"bytes"
 	"context"
-	"crypto/md5"
-	"encoding/hex"
-	"encoding/json"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"reflect"
 	"sort"
-	"sync"
+	"strconv"
+	"syscall"
+	"time"
 
-	"github.com/wzshiming/envoy/bind"
+	"github.com/golang/protobuf/proto"
+	"github.com/pipeproxy/pipe-xds/encoding"
+	"github.com/pipeproxy/pipe-xds/internal/adsc"
+	"github.com/pipeproxy/pipe/bind"
+	"github.com/pipeproxy/pipe/config"
+	"github.com/wzshiming/notify"
+	"sigs.k8s.io/yaml"
+)
+
+const (
+	configFile = "pipe.yml"
+	pidFile    = "pipe.pid"
 )
 
 type ConfigCtx struct {
-	init         []bind.Once
-	componentMap map[string]bind.PipeComponent
-	eds          []string
-	rds          []string
-	sds          []string
-	ctx          context.Context
-	services     []string
-	mut          sync.Mutex
+	cli  *adsc.ADSC
+	adsc map[string]*adsc.ADSC
+
+	swap     []string
+	basePath string
+	cds      map[string]bind.StreamDialer
+	eds      map[string]bind.StreamDialer
+	lds      map[string]bind.Service
+	rds      map[string]bind.HTTPHandler
+	sds      map[string]bind.TLS
+	xds      map[string]proto.Message
+	updateCh chan struct{}
 }
 
-func (c *ConfigCtx) MarshalJSON() ([]byte, error) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+func NewConfigCtx(ctx context.Context, cli *adsc.ADSC, basePath string) *ConfigCtx {
+	return &ConfigCtx{
+		cli:      cli,
+		adsc:     map[string]*adsc.ADSC{},
+		basePath: basePath,
+		cds:      map[string]bind.StreamDialer{},
+		eds:      map[string]bind.StreamDialer{},
+		lds:      map[string]bind.Service{},
+		rds:      map[string]bind.HTTPHandler{},
+		sds:      map[string]bind.TLS{},
+		xds:      map[string]proto.Message{},
+		updateCh: make(chan struct{}, 1),
+	}
+}
 
-	conf := bind.PipeConfig{}
-
-	switch len(c.services) {
-	case 0:
-		conf.Pipe = bind.ServiceNone{}
-	case 1:
-		conf.Pipe = bind.RefService(c.services[0])
-
+func (c *ConfigCtx) update() {
+	select {
+	case c.updateCh <- struct{}{}:
 	default:
-		multi := make([]bind.Service, 0, len(c.services))
-		for _, service := range c.services {
-			multi = append(multi, bind.RefService(service))
+	}
+}
+
+func (c *ConfigCtx) RegisterADS(name string, dialer bind.StreamDialer) {
+	//c.adsc[name] = ads
+	c.update()
+}
+
+func (c *ConfigCtx) SetNodeID(nodeid string) {
+	c.cli.NodeID = nodeid
+}
+
+func (c *ConfigCtx) RegisterCDS(name string, dialer bind.StreamDialer, msg proto.Message) {
+	c.cds[name] = dialer
+	c.xds[name] = msg
+	c.update()
+}
+
+func (c *ConfigCtx) RegisterEDS(name string, dialer bind.StreamDialer, msg proto.Message) {
+	c.eds[name] = dialer
+	c.xds[name] = msg
+	c.update()
+}
+
+func (c *ConfigCtx) RegisterLDS(name string, service bind.Service, msg proto.Message) {
+	c.lds[name] = service
+	c.xds[name] = msg
+	c.update()
+}
+
+func (c *ConfigCtx) RegisterRDS(name string, handler bind.HTTPHandler, msg proto.Message) {
+	c.rds[name] = handler
+	c.xds[name] = msg
+	c.update()
+}
+
+func (c *ConfigCtx) RegisterSDS(name string, tls bind.TLS, msg proto.Message) {
+	c.sds[name] = tls
+	c.xds[name] = msg
+	c.update()
+}
+
+func (c *ConfigCtx) save() {
+	componentSortd := []sortd{}
+	serviceSortd := []sortd{}
+
+	for name, d := range c.cds {
+		componentSortd = append(componentSortd, sortd{name, d})
+	}
+	for name, d := range c.eds {
+		componentSortd = append(componentSortd, sortd{name, d})
+	}
+	for name, d := range c.lds {
+		serviceSortd = append(serviceSortd, sortd{name, d})
+	}
+	for name, d := range c.rds {
+		componentSortd = append(componentSortd, sortd{name, d})
+	}
+	for name, d := range c.sds {
+		componentSortd = append(componentSortd, sortd{name, d})
+	}
+
+	components := make([]bind.Component, 0, len(componentSortd))
+	sort.Slice(componentSortd, func(i, j int) bool {
+		return componentSortd[i].Name < componentSortd[j].Name
+	})
+	for _, com := range componentSortd {
+		f := com.Name + ".yml"
+		c.writeFile(f, com.Component, c.xds[com.Name])
+
+		var d bind.Component
+		switch com.Component.(type) {
+		case bind.StreamDialer:
+			d = bind.LoadStreamDialerConfig{Load: bind.FileIoReaderConfig{Path: f}}
+		case bind.HTTPHandler:
+			d = bind.LoadNetHTTPHandlerConfig{Load: bind.FileIoReaderConfig{Path: f}}
+		case bind.TLS:
+			d = bind.LoadTLSConfig{Load: bind.FileIoReaderConfig{Path: f}}
+		}
+		components = append(components, d)
+	}
+
+	services := make([]bind.Service, 0, len(serviceSortd))
+	sort.Slice(serviceSortd, func(i, j int) bool {
+		return serviceSortd[i].Name < serviceSortd[j].Name
+	})
+	for _, com := range serviceSortd {
+		f := com.Name + ".yml"
+		c.writeFile(f, com.Component, c.xds[com.Name])
+
+		if reflect.DeepEqual(com.Component, bind.NoneService{}) {
+			continue
 		}
 
-		conf.Pipe = bind.ServiceMultiConfig{
-			Multi: multi,
+		var d bind.Service
+		switch com.Component.(type) {
+		case bind.Service:
+
+			d = bind.LoadServiceConfig{Load: bind.FileIoReaderConfig{Path: f}}
 		}
+		services = append(services, d)
 	}
 
-	keys := make([]string, 0, len(c.componentMap))
-	for key := range c.componentMap {
-		keys = append(keys, key)
+	services = append(services, defaultServices...)
+
+	d := bind.MultiOnceConfig{
+		Multi: []bind.Once{
+			bind.ServiceOnceConfig{
+				Service: bind.MultiServiceConfig{
+					Multi: services,
+				},
+			},
+			bind.ComponentsOnceConfig{
+				Components: components,
+			},
+		},
 	}
-	sort.Strings(keys)
 
-	conf.Components = make([]bind.PipeComponent, 0, len(c.componentMap))
-	for _, key := range keys {
-		conf.Components = append(conf.Components, c.componentMap[key])
+	c.writeFile(configFile, d, nil)
+}
+
+func (c *ConfigCtx) Start() error {
+	if !c.existFile(configFile) {
+		c.save()
 	}
+	c.deleteFile(pidFile)
 
-	conf.Init = c.init
-
-	return json.Marshal(conf)
-}
-
-func (c *ConfigCtx) Ctx() context.Context {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-
-	return c.ctx
-}
-
-func (c *ConfigCtx) WithValue(key, val interface{}) context.Context {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-
-	c.ctx = context.WithValue(c.ctx, key, val)
-	return c.ctx
-}
-
-func (c *ConfigCtx) ResetEDS() []string {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-
-	eds := c.eds
-	c.eds = nil
-	return eds
-}
-
-func (c *ConfigCtx) ResetRDS() []string {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-
-	rds := c.rds
-	c.rds = nil
-	return rds
-}
-
-func (c *ConfigCtx) ResetSDS() []string {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-
-	sds := c.sds
-	c.sds = nil
-	return sds
-}
-
-func (c *ConfigCtx) EDS() []string {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-
-	return c.eds
-}
-
-func (c *ConfigCtx) RDS() []string {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-
-	return c.rds
-}
-
-func (c *ConfigCtx) SDS() []string {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-
-	return c.sds
-}
-
-func (c *ConfigCtx) AppendEDS(eds string) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-	for _, v := range c.eds {
-		if v == eds {
-			return
+	isClose := false
+	go func() {
+		for !isClose {
+			err := c.startPipe()
+			if err != nil {
+				log.Println(err)
+			}
+			time.Sleep(time.Second)
 		}
-	}
-
-	c.eds = append(c.eds, eds)
-}
-
-func (c *ConfigCtx) AppendRDS(rds string) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-	for _, v := range c.rds {
-		if v == rds {
-			return
+		os.Exit(0)
+	}()
+	notify.On(syscall.SIGHUP, func() {
+		isClose = true
+		err := c.stopPipe()
+		if err != nil {
+			log.Println(err)
 		}
-	}
+	})
 
-	c.rds = append(c.rds, rds)
-}
-
-func (c *ConfigCtx) AppendSDS(sds string) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-	for _, v := range c.sds {
-		if v == sds {
-			return
+	go func() {
+	loop:
+		for {
+			<-c.updateCh
+			for {
+				select {
+				case <-c.updateCh:
+				case <-time.After(time.Second / 10):
+					c.save()
+					c.reloadPipe()
+					continue loop
+				}
+			}
 		}
-	}
-
-	c.sds = append(c.sds, sds)
-}
-
-func (c *ConfigCtx) RegisterComponents(name string, d bind.PipeComponent) (string, error) {
-
-	c.mut.Lock()
-	defer c.mut.Unlock()
-
-	n, raw, err := marshalName(d)
-	if err != nil {
-		return "", err
-	}
-
-	d = bind.NamePipeComponent{
-		Name:          n,
-		PipeComponent: bind.RawPipeComponent(raw),
-	}
-	c.componentMap[n] = d
-	if name != "" {
-		c.componentMap[name] = bind.NamePipeComponent{
-			Name:          name,
-			PipeComponent: bind.RefPipeComponent(n),
-		}
-	}
-	return n, nil
-}
-
-func (c *ConfigCtx) RegisterService(name string) error {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-
-	for _, services := range c.services {
-		if services == name {
-			return nil
-		}
-	}
-	c.services = append(c.services, name)
+	}()
 	return nil
 }
 
-func (c *ConfigCtx) RegisterInit(d bind.Once) (string, error) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-
-	c.init = append(c.init, d)
-	return "", nil
+func (c *ConfigCtx) startPipe() error {
+	cmd := exec.Command("pipe", "-c", configFile, "-p", pidFile)
+	cmd.Dir = c.basePath
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
-func marshalName(m json.Marshaler) (string, json.RawMessage, error) {
-	d, err := m.MarshalJSON()
+func (c *ConfigCtx) reloadPipe() error {
+	file, err := ioutil.ReadFile(filepath.Join(c.basePath, pidFile))
 	if err != nil {
-		return "", nil, err
+		return err
 	}
-	hash := md5.Sum(d)
-	name := "auto@" + hex.EncodeToString(hash[:])
-	return name, d, nil
+	pid, err := strconv.Atoi(string(file))
+	if err != nil {
+		return err
+	}
+	return syscall.Kill(pid, syscall.SIGHUP)
 }
 
-type xdsCtxKeyType int
-
-func GetXdsWithContext(ctx context.Context) (*ConfigCtx, bool) {
-	i := ctx.Value(xdsCtxKeyType(0))
-	if i == nil {
-		return nil, false
+func (c *ConfigCtx) stopPipe() error {
+	file, err := ioutil.ReadFile(filepath.Join(c.basePath, pidFile))
+	if err != nil {
+		return err
 	}
-	p, ok := i.(*ConfigCtx)
-	return p, ok
+	pid, err := strconv.Atoi(string(file))
+	if err != nil {
+		return err
+	}
+	return syscall.Kill(pid, syscall.SIGINT)
 }
 
-func NewConfigCtx(ctx context.Context) *ConfigCtx {
-	c := &ConfigCtx{
-		ctx:          ctx,
-		componentMap: map[string]bind.PipeComponent{},
-	}
-	ctx = context.WithValue(ctx, xdsCtxKeyType(0), c)
-	c.ctx = ctx
-	return c
+type sortd struct {
+	Name      string
+	Component bind.Component
 }
 
-func XdsName(name string) string {
-	if name == "" {
-		return ""
+func (c *ConfigCtx) existFile(name string) bool {
+	file := filepath.Join(c.basePath, name)
+	_, err := os.Stat(file)
+	return err == nil
+}
+
+func (c *ConfigCtx) deleteFile(name string) {
+	file := filepath.Join(c.basePath, name)
+	os.Remove(file)
+	return
+}
+
+func (c *ConfigCtx) writeFile(name string, com bind.Component, msg proto.Message) {
+	data, _ := yaml.Marshal(com)
+	file := filepath.Join(c.basePath, name)
+	c.swap = append(c.swap, file)
+	if msg != nil {
+		commit, err := encoding.Marshal(msg)
+		if err != nil {
+			log.Println(err)
+		}
+		commit, _ = yaml.JSONToYAML(commit)
+		commit = bytes.ReplaceAll(commit, []byte{'\n'}, comm)
+		data = append(data, comm...)
+		data = append(data, commit...)
 	}
-	return "xds@" + name
+	ioutil.WriteFile(file, data, 0644)
+}
+
+var comm = []byte{'\n', '#', ' '}
+
+var defaultServices = []bind.Service{
+	bind.StreamServiceConfig{
+		Listener: bind.ListenerStreamListenConfigConfig{
+			Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
+			Address: ":15021",
+		},
+		Handler: bind.HTTP1StreamHandlerConfig{
+			Handler: BuildHealthWithHTTPHandler(),
+		},
+	},
+	bind.StreamServiceConfig{
+		Listener: bind.ListenerStreamListenConfigConfig{
+			Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
+			Address: ":15090",
+		},
+		Handler: bind.HTTP1StreamHandlerConfig{
+			Handler: BuildPrometheusWithHTTPHandler(),
+		},
+	},
+	bind.StreamServiceConfig{
+		Listener: bind.ListenerStreamListenConfigConfig{
+			Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
+			Address: ":15000",
+		},
+		Handler: bind.HTTP1StreamHandlerConfig{
+			Handler: BuildAdminWithHTTPHandler(),
+		},
+	},
+}
+
+func BuildAdminWithHTTPHandler() bind.HTTPHandler {
+	return bind.MuxNetHTTPHandlerConfig{
+		Routes: []bind.MuxNetHTTPHandlerRoute{
+			{
+				Path: "/",
+				Handler: bind.MultiNetHTTPHandlerConfig{
+					Multi: []bind.HTTPHandler{
+						config.BuildContentTypeHTMLWithHTTPHandler(),
+						bind.DirectNetHTTPHandlerConfig{
+							Code: http.StatusOK,
+							Body: bind.InlineIoReaderConfig{
+								Data: `<pre>
+<a href="pprof/">{{.Path}}pprof/</a>
+<a href="expvar">{{.Path}}expvar</a>
+<a href="must_quit">{{.Path}}must_quit</a>
+<a href="healthz/ready">{{.Path}}healthz/ready</a>
+<a href="stats/prometheus">{{.Path}}stats/prometheus</a>
+<a href="config_dump">{{.Path}}config_dump</a>
+<a href="config_dump_edit.sh">{{.Path}}config_dump_edit.sh</a>
+</pre>`,
+							},
+						},
+					},
+				},
+			},
+			{
+				Prefix:  "/pprof/",
+				Handler: bind.PprofNetHTTPHandler{},
+			},
+			{
+				Path:    "/expvar",
+				Handler: bind.ExpvarNetHTTPHandler{},
+			},
+			{
+				Path:    "/must_quit",
+				Handler: bind.QuitNetHTTPHandler{},
+			},
+			{
+				Path:    "/config_dump",
+				Handler: bind.ConfigDumpNetHTTPHandlerConfig{},
+			},
+			{
+				Path: "/config_dump_edit.sh",
+				Handler: bind.MultiNetHTTPHandlerConfig{
+					Multi: []bind.HTTPHandler{
+						bind.DirectNetHTTPHandlerConfig{
+							Code: http.StatusOK,
+							Body: bind.InlineIoReaderConfig{
+								Data: `#!/bin/sh
+URL="{{.Scheme}}://{{.Host}}"
+RESOURCE="$URL/config_dump"
+TMP=.pipe_edit_tmp_file.yaml
+
+# Check if editing is allowed
+curl -sL -v -X OPTIONS "$RESOURCE" 2>&1 | \
+grep "< Allow:" | grep "PUT" > /dev/null || \
+{ echo "Editing Not Allowed"; exit 1;}
+
+# Editing
+curl -sL "$RESOURCE?yaml" > $TMP && \
+vi $TMP && \
+curl -sL -X PUT "$RESOURCE" -d "$(cat $TMP)" && \
+rm $TMP
+
+# sh -c "$(curl -sL {{.Scheme}}://{{.Host}}{{.Path}})"
+`,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func BuildHealthWithHTTPHandler() bind.HTTPHandler {
+	return bind.MuxNetHTTPHandlerConfig{
+		Routes: []bind.MuxNetHTTPHandlerRoute{
+			{
+				Path: "/healthz/ready",
+				Handler: bind.DirectNetHTTPHandlerConfig{
+					Code: http.StatusOK,
+					Body: bind.InlineIoReaderConfig{
+						Data: ``,
+					},
+				},
+			},
+		},
+	}
+}
+
+func BuildPrometheusWithHTTPHandler() bind.HTTPHandler {
+	return bind.MuxNetHTTPHandlerConfig{
+		Routes: []bind.MuxNetHTTPHandlerRoute{
+			{
+				Path:    "/stats/prometheus",
+				Handler: bind.MetricsNetHTTPHandler{},
+			},
+		},
+	}
 }

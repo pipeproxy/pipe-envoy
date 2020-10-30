@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"go/format"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/wzshiming/envoy/internal/logger"
 	"github.com/wzshiming/gotype"
 )
 
@@ -30,23 +30,26 @@ func run(imp string) {
 
 	typ, err := impprter.Import(imp, "")
 	if err != nil {
-		logger.Fatal(err)
+		log.Fatal(err)
 	}
 
 	num := typ.NumChild()
 	pkg := typ.Name()
-	logger.Info(imp, " ", num)
 
 	for i := 0; i != num; i++ {
 		child := typ.Child(i)
 		name := child.Name()
 
-		if 'A' > name[0] || 'Z' < name[0] || strings.Contains(name, "DeprecatedV1") || strings.HasSuffix(name, "ValidationError") || child.Kind() != gotype.Struct || child.NumField() <= 3 {
+		if 'A' > name[0] || 'Z' < name[0] || strings.Contains(name, "Deprecated") || strings.HasSuffix(name, "ValidationError") || child.Kind() != gotype.Struct {
+			continue
+		}
+		_, ok := child.MethodByName("ProtoMessage")
+		if !ok {
 			continue
 		}
 
 		path := filepath.Join(strings.TrimPrefix(imp, "github.com/envoyproxy/go-control-plane/envoy/"), strings.ToLower(name)+".go")
-		path = strings.ReplaceAll(path, "/", "_")
+		path = "xds_" + strings.ReplaceAll(path, "/", "_")
 
 		generateFile(name, pkg, imp, path)
 	}
@@ -60,18 +63,19 @@ func generateFile(name, pkg, imp, path string) error {
 package convert
 
 import (
-    %s %q
-    "github.com/wzshiming/envoy/config"
-    "github.com/wzshiming/envoy/internal/logger"
+	"log"
+	%s %q
+	"github.com/pipeproxy/pipe-xds/config"
+	"github.com/pipeproxy/pipe-xds/encoding"
 )
 
 func Convert_%s_%s(conf *config.ConfigCtx, c *%s.%s) (string, error) {
-    logger.Todof("%%#v", c)
+	data, _ := encoding.Marshal(c)
+	log.Printf("[TODO] %s.%s %%s\n", string(data))
 	return "", nil
 }
 
-`, pkg, imp, strings.TrimPrefix(pkg, "envoy_"), name, pkg, name)
-
+`, pkg, imp, strings.TrimPrefix(pkg, "envoy_"), name, pkg, name, pkg, name)
 	err := os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
 		return err
