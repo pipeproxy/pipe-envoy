@@ -34,7 +34,7 @@ echo Pipe log: ${PIPE_LOG}
 PIPE_PID=$!
 
 function cleanup() {
-  kill ${PIPE_PID}
+  kill -QUIT ${PIPE_PID}
 }
 trap cleanup EXIT
 

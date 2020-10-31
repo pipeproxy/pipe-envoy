@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"syscall"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -17,6 +18,7 @@ import (
 	"github.com/pipeproxy/pipe-xds/config"
 	"github.com/pipeproxy/pipe-xds/convert"
 	"github.com/pipeproxy/pipe-xds/internal/adsc"
+	"github.com/wzshiming/notify"
 	"github.com/wzshiming/xds/utils"
 )
 
@@ -27,7 +29,8 @@ var (
 	metadata = map[string]interface{}{
 		"CLUSTER_ID": "Kubernetes",
 	}
-	tmp = "./tmp/"
+	tmp         = "./tmp/"
+	ctx, cancel = context.WithCancel(context.Background())
 )
 
 const (
@@ -64,7 +67,8 @@ func init() {
 }
 
 func main() {
-	ctx := context.Background()
+	notify.OnSlice([]os.Signal{syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM}, cancel)
+
 	var tlsConfig *tls.Config
 	var err error
 	if certs != "" {
@@ -158,7 +162,7 @@ func main() {
 		}
 	}
 
-	err = c.Start()
+	err = c.Start(ctx)
 	if err != nil {
 		log.Fatalln(err)
 	}

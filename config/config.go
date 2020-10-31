@@ -20,7 +20,6 @@ import (
 	"github.com/pipeproxy/pipe-xds/internal/adsc"
 	"github.com/pipeproxy/pipe/bind"
 	"github.com/pipeproxy/pipe/config"
-	"github.com/wzshiming/notify"
 	"sigs.k8s.io/yaml"
 )
 
@@ -30,9 +29,8 @@ const (
 )
 
 type ConfigCtx struct {
-	cli  *adsc.ADSC
-	adsc map[string]*adsc.ADSC
-
+	cli      *adsc.ADSC
+	ctx      context.Context
 	swap     []string
 	basePath string
 	cds      map[string]bind.StreamDialer
@@ -47,7 +45,7 @@ type ConfigCtx struct {
 func NewConfigCtx(ctx context.Context, cli *adsc.ADSC, basePath string) *ConfigCtx {
 	return &ConfigCtx{
 		cli:      cli,
-		adsc:     map[string]*adsc.ADSC{},
+		ctx:      ctx,
 		basePath: basePath,
 		cds:      map[string]bind.StreamDialer{},
 		eds:      map[string]bind.StreamDialer{},
@@ -184,7 +182,7 @@ func (c *ConfigCtx) save() {
 	c.writeFile(configFile, d, nil)
 }
 
-func (c *ConfigCtx) Start() error {
+func (c *ConfigCtx) Start(ctx context.Context) error {
 	if !c.existFile(configFile) {
 		c.save()
 	}
@@ -201,26 +199,28 @@ func (c *ConfigCtx) Start() error {
 		}
 		os.Exit(0)
 	}()
-	notify.On(syscall.SIGHUP, func() {
-		isClose = true
-		err := c.stopPipe()
-		if err != nil {
-			log.Println(err)
-		}
-	})
 
 	go func() {
 	loop:
 		for {
-			<-c.updateCh
-			for {
-				select {
-				case <-c.updateCh:
-				case <-time.After(time.Second / 10):
-					c.save()
-					c.reloadPipe()
-					continue loop
+			select {
+			case <-c.updateCh:
+				for {
+					select {
+					case <-c.updateCh:
+					case <-time.After(time.Second / 10):
+						c.save()
+						c.reloadPipe()
+						continue loop
+					}
 				}
+			case <-ctx.Done():
+				isClose = true
+				err := c.stopPipe()
+				if err != nil {
+					log.Println(err)
+				}
+				break loop
 			}
 		}
 	}()
@@ -256,7 +256,7 @@ func (c *ConfigCtx) stopPipe() error {
 	if err != nil {
 		return err
 	}
-	return syscall.Kill(pid, syscall.SIGINT)
+	return syscall.Kill(pid, syscall.SIGQUIT)
 }
 
 type sortd struct {
