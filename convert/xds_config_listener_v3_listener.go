@@ -10,7 +10,7 @@ func Convert_config_listener_v3_Listener(conf *config.ConfigCtx, c *envoy_config
 	if c.DeprecatedV1 != nil && !c.DeprecatedV1.BindToPort.GetValue() {
 		return bind.NoneService{}, nil
 	}
-	if len(c.FilterChains) == 0 || len(c.FilterChains[len(c.FilterChains)-1].Filters) == 0 {
+	if len(c.FilterChains) == 0 || len(c.FilterChains[0].Filters) == 0 {
 		return bind.NoneService{}, nil
 	}
 
@@ -19,8 +19,7 @@ func Convert_config_listener_v3_Listener(conf *config.ConfigCtx, c *envoy_config
 		return nil, err
 	}
 
-	filterChain := c.FilterChains[len(c.FilterChains)-1]
-
+	filterChain := c.FilterChains[0]
 	s, err := Convert_config_listener_v3_FilterChain(conf, filterChain)
 	if err != nil {
 		return nil, err

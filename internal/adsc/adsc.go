@@ -170,12 +170,12 @@ func (a *ADSC) handleLDS(xds *xds_v3.Client, ll []*envoy_config_listener_v3.List
 	for _, l := range ll {
 
 		// The last filter is the actual destination for inbound listener
-		if l.ApiListener != nil {
+		if l.ApiListener != nil || len(l.FilterChains) == 0 {
 			// This is an API Listener
 			// TODO: extract VIP and RDS or cluster
 			continue
 		}
-		filterChain := l.FilterChains[len(l.FilterChains)-1]
+		filterChain := l.FilterChains[0]
 		secrets = append(secrets, GetSDSName(filterChain.TransportSocket)...)
 		filter := filterChain.Filters[0]
 		if filter.Name == wellknown.TCPProxy {
