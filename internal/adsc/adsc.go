@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"log"
 	"reflect"
+	"sort"
 	"sync"
 	"time"
 
@@ -122,10 +123,10 @@ func (a *ADSC) handleCDS(xds *xds_v3.Client, ll []*envoy_config_cluster_v3.Clust
 	}
 
 	if len(cn) > 0 {
-		xds.SendRsc(xds_v3.EndpointType, cn)
+		xds.SendRsc(xds_v3.EndpointType, removeDuplicates(cn))
 	}
 	if len(secrets) > 0 {
-		xds.SendRsc(xds_v3.SecretType, secrets)
+		xds.SendRsc(xds_v3.SecretType, removeDuplicates(secrets))
 	}
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -198,14 +199,13 @@ func (a *ADSC) handleLDS(xds *xds_v3.Client, ll []*envoy_config_listener_v3.List
 			//	RDS = append(RDS, fmt.Sprintf("%d", port))
 			//}
 		}
-
 	}
 
 	if len(routes) > 0 {
-		xds.SendRsc(xds_v3.RouteType, routes)
+		xds.SendRsc(xds_v3.RouteType, removeDuplicates(routes))
 	}
 	if len(secrets) > 0 {
-		xds.SendRsc(xds_v3.SecretType, secrets)
+		xds.SendRsc(xds_v3.SecretType, removeDuplicates(secrets))
 	}
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -252,4 +252,19 @@ func (a *ADSC) handleSDS(xds *xds_v3.Client, secrets []*envoy_extensions_transpo
 			a.HandleSDS(sds)
 		}
 	}
+}
+
+func removeDuplicates(a []string) (ret []string) {
+	if len(a) <= 1 {
+		return a
+	}
+	sort.Strings(a)
+	ret = a[:1]
+	for i := 1; i < len(a); i++ {
+		if a[i-1] == a[i] {
+			continue
+		}
+		ret = append(ret, a[i])
+	}
+	return ret
 }

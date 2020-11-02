@@ -34,7 +34,10 @@ func Convert_config_cluster_v3_Cluster(conf *config.ConfigCtx, c *envoy_config_c
 			case envoy_config_cluster_v3.Cluster_EDS:
 				d = bind.RefStreamDialerConfig{Name: "eds." + c.Name}
 			case envoy_config_cluster_v3.Cluster_ORIGINAL_DST:
-				d = bind.OriginalStreamDialer{}
+				d = bind.DialerStreamDialerConfig{
+					Original: true,
+					Virtual:  c.UpstreamBindConfig == nil,
+				}
 			case envoy_config_cluster_v3.Cluster_STATIC:
 				d = bind.NoneStreamDialer{}
 			default:

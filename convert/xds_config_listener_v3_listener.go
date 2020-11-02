@@ -7,10 +7,7 @@ import (
 )
 
 func Convert_config_listener_v3_Listener(conf *config.ConfigCtx, c *envoy_config_listener_v3.Listener) (bind.Service, error) {
-	if c.DeprecatedV1 != nil && !c.DeprecatedV1.BindToPort.GetValue() {
-		return bind.NoneService{}, nil
-	}
-	if len(c.FilterChains) == 0 || len(c.FilterChains[0].Filters) == 0 {
+	if len(c.FilterChains) == 0 {
 		return bind.NoneService{}, nil
 	}
 
@@ -31,6 +28,7 @@ func Convert_config_listener_v3_Listener(conf *config.ConfigCtx, c *envoy_config
 		Listener: bind.ListenerStreamListenConfigConfig{
 			Network: bind.ListenerStreamListenConfigListenerNetworkEnum(network),
 			Address: address,
+			Virtual: c.DeprecatedV1 != nil && !c.DeprecatedV1.BindToPort.GetValue(),
 		},
 		Handler: s,
 	}
