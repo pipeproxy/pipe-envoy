@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -31,7 +30,6 @@ const (
 type ConfigCtx struct {
 	cli      *adsc.ADSC
 	ctx      context.Context
-	swap     []string
 	basePath string
 	cds      map[string]bind.StreamDialer
 	eds      map[string]bind.StreamDialer
@@ -182,24 +180,25 @@ func (c *ConfigCtx) save() {
 	c.writeFile(configFile, d, nil)
 }
 
-func (c *ConfigCtx) Start(ctx context.Context) error {
+func (c *ConfigCtx) Run(ctx context.Context) error {
 	if !c.existFile(configFile) {
 		c.save()
 	}
 	c.deleteFile(pidFile)
+	return c.startPipe(ctx)
+}
 
-	isClose := false
-	go func() {
-		for !isClose {
-			err := c.startPipe()
-			if err != nil {
-				log.Println(err)
-			}
-			time.Sleep(time.Second)
-		}
-		os.Exit(0)
-	}()
-
+func (c *ConfigCtx) startPipe(ctx context.Context) error {
+	cmd := exec.Command("pipe", "-c", configFile, "-p", pidFile)
+	cmd.Dir = c.basePath
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Start()
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	go func() {
 	loop:
 		for {
@@ -210,53 +209,17 @@ func (c *ConfigCtx) Start(ctx context.Context) error {
 					case <-c.updateCh:
 					case <-time.After(time.Second / 10):
 						c.save()
-						c.reloadPipe()
+						cmd.Process.Signal(syscall.SIGHUP)
 						continue loop
 					}
 				}
 			case <-ctx.Done():
-				isClose = true
-				err := c.stopPipe()
-				if err != nil {
-					log.Println(err)
-				}
+				cmd.Process.Signal(syscall.SIGQUIT)
 				break loop
 			}
 		}
 	}()
-	return nil
-}
-
-func (c *ConfigCtx) startPipe() error {
-	cmd := exec.Command("pipe", "-c", configFile, "-p", pidFile)
-	cmd.Dir = c.basePath
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
-}
-
-func (c *ConfigCtx) reloadPipe() error {
-	file, err := ioutil.ReadFile(filepath.Join(c.basePath, pidFile))
-	if err != nil {
-		return err
-	}
-	pid, err := strconv.Atoi(string(file))
-	if err != nil {
-		return err
-	}
-	return syscall.Kill(pid, syscall.SIGHUP)
-}
-
-func (c *ConfigCtx) stopPipe() error {
-	file, err := ioutil.ReadFile(filepath.Join(c.basePath, pidFile))
-	if err != nil {
-		return err
-	}
-	pid, err := strconv.Atoi(string(file))
-	if err != nil {
-		return err
-	}
-	return syscall.Kill(pid, syscall.SIGQUIT)
+	return cmd.Wait()
 }
 
 type sortd struct {
@@ -279,7 +242,6 @@ func (c *ConfigCtx) deleteFile(name string) {
 func (c *ConfigCtx) writeFile(name string, com bind.Component, msg proto.Message) {
 	data, _ := yaml.Marshal(com)
 	file := filepath.Join(c.basePath, name)
-	c.swap = append(c.swap, file)
 	if msg != nil {
 		commit, err := encoding.Marshal(msg)
 		if err != nil {

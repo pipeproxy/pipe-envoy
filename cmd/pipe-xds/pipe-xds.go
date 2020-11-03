@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"syscall"
+	"time"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -162,14 +163,21 @@ func main() {
 		}
 	}
 
-	err = c.Start(ctx)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	go func() {
+		for {
+			err = ads.Run(ctx)
+			if err != nil {
+				log.Println(err)
+			}
+			time.Sleep(time.Second)
+		}
+	}()
 
-	err = ads.Run(ctx)
-	if err != nil {
-		log.Fatalln(err)
+	for ctx.Err() == nil {
+		err = c.Run(ctx)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
 	return

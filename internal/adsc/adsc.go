@@ -3,11 +3,9 @@ package adsc
 import (
 	"context"
 	"crypto/tls"
-	"log"
 	"reflect"
 	"sort"
 	"sync"
-	"time"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -67,13 +65,7 @@ func NewADSC(address string, t *tls.Config, node utils.NodeConfig) *ADSC {
 }
 
 func (a *ADSC) Run(ctx context.Context) error {
-	for {
-		err := a.Client.Run(ctx)
-		if err != nil {
-			log.Println(err)
-		}
-		time.Sleep(time.Second)
-	}
+	return a.Client.Run(ctx)
 }
 
 func (a *ADSC) config() *xds_v3.Config {
