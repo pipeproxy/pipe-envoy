@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"sort"
 	"sync"
+	"time"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -22,6 +23,9 @@ type ADSC struct {
 	mutex sync.Mutex
 
 	*xds_v3.Client
+
+	watchTime   time.Time
+	initialLoad time.Duration
 
 	watchCDS bool
 	watchLDS bool
@@ -80,19 +84,20 @@ func (a *ADSC) config() *xds_v3.Config {
 }
 
 func (a *ADSC) watch(cli *xds_v3.Client) error {
-	//if a.watchCDS {
-	err := cli.SendRsc(xds_v3.ClusterType, nil)
-	if err != nil {
-		return err
+	a.watchTime = time.Now()
+	if a.watchCDS {
+		err := cli.SendRsc(xds_v3.ClusterType, nil)
+		if err != nil {
+			return err
+		}
+	} else {
+		if a.watchLDS {
+			err := cli.SendRsc(xds_v3.ListenerType, nil)
+			if err != nil {
+				return err
+			}
+		}
 	}
-	//}
-
-	//if a.watchLDS {
-	err = cli.SendRsc(xds_v3.ListenerType, nil)
-	if err != nil {
-		return err
-	}
-	//}
 	return nil
 }
 
@@ -152,6 +157,13 @@ func (a *ADSC) handleEDS(xds *xds_v3.Client, eds []*envoy_config_endpoint_v3.Clu
 		}
 	}
 
+	if a.initialLoad == 0 {
+		if a.watchLDS {
+			xds.SendRsc(xds_v3.ListenerType, nil)
+		} else {
+			a.initialLoad = time.Since(a.watchTime)
+		}
+	}
 }
 
 func (a *ADSC) handleLDS(xds *xds_v3.Client, ll []*envoy_config_listener_v3.Listener) {
@@ -228,6 +240,10 @@ func (a *ADSC) handleRDS(xds *xds_v3.Client, configurations []*envoy_config_rout
 		if a.HandleRDS != nil {
 			a.HandleRDS(rds)
 		}
+	}
+
+	if a.initialLoad == 0 {
+		a.initialLoad = time.Since(a.watchTime)
 	}
 }
 
