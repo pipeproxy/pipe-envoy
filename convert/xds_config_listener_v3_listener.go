@@ -22,6 +22,13 @@ func Convert_config_listener_v3_Listener(conf *config.ConfigCtx, c *envoy_config
 		return nil, err
 	}
 
+	s = bind.LogStreamHandlerConfig{
+		Handler: s,
+		Output: bind.FileIoWriterConfig{
+			Path: "/dev/stderr",
+		},
+	}
+
 	var d bind.Service
 	d = bind.StreamServiceConfig{
 		DisconnectOnClose: true,

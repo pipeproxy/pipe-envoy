@@ -30,14 +30,12 @@ func Convert_extensions_filters_network_http_connection_manager_v3_HttpConnectio
 		return nil, nil
 	}
 
-	//
-	//for _, accessLog := range c.AccessLog {
-	//	n, err := Convert_config_filter_accesslog_v2_AccessLog(conf, accessLog, route)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	route = n
-	//}
+	route = bind.LogNetHTTPHandlerConfig{
+		Handler: route,
+		Output: bind.FileIoWriterConfig{
+			Path: "/dev/stderr",
+		},
+	}
 
 	var d bind.StreamHandler
 	if tls == nil {
