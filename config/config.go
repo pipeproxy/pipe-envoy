@@ -161,9 +161,12 @@ func (c *ConfigCtx) save() {
 		}
 		services = append(services, d)
 	}
-
-	services = append(services, defaultServices...)
-
+	for _, d := range defaultServices {
+		components = append(components, d)
+		services = append(services, bind.RefServiceConfig{
+			Name: d.Name,
+		})
+	}
 	d := bind.MultiOnceConfig{
 		Multi: []bind.Once{
 			bind.ServiceOnceConfig{
@@ -257,32 +260,41 @@ func (c *ConfigCtx) writeFile(name string, com bind.Component, msg proto.Message
 
 var comm = []byte{'\n', '#', ' '}
 
-var defaultServices = []bind.Service{
-	bind.StreamServiceConfig{
-		Listener: bind.ListenerStreamListenConfigConfig{
-			Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
-			Address: ":15021",
-		},
-		Handler: bind.HTTP1StreamHandlerConfig{
-			Handler: BuildHealthWithHTTPHandler(),
-		},
-	},
-	bind.StreamServiceConfig{
-		Listener: bind.ListenerStreamListenConfigConfig{
-			Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
-			Address: ":15090",
-		},
-		Handler: bind.HTTP1StreamHandlerConfig{
-			Handler: BuildPrometheusWithHTTPHandler(),
+var defaultServices = []bind.DefServiceConfig{
+	{
+		Name: "_health",
+		Def: bind.StreamServiceConfig{
+			Listener: bind.ListenerStreamListenConfigConfig{
+				Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
+				Address: ":15021",
+			},
+			Handler: bind.HTTP1StreamHandlerConfig{
+				Handler: BuildHealthWithHTTPHandler(),
+			},
 		},
 	},
-	bind.StreamServiceConfig{
-		Listener: bind.ListenerStreamListenConfigConfig{
-			Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
-			Address: ":15000",
+	{
+		Name: "_metric",
+		Def: bind.StreamServiceConfig{
+			Listener: bind.ListenerStreamListenConfigConfig{
+				Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
+				Address: ":15090",
+			},
+			Handler: bind.HTTP1StreamHandlerConfig{
+				Handler: BuildPrometheusWithHTTPHandler(),
+			},
 		},
-		Handler: bind.HTTP1StreamHandlerConfig{
-			Handler: BuildAdminWithHTTPHandler(),
+	},
+	{
+		Name: "_admin",
+		Def: bind.StreamServiceConfig{
+			Listener: bind.ListenerStreamListenConfigConfig{
+				Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
+				Address: ":15000",
+			},
+			Handler: bind.HTTP1StreamHandlerConfig{
+				Handler: BuildAdminWithHTTPHandler(),
+			},
 		},
 	},
 }

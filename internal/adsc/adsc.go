@@ -3,6 +3,7 @@ package adsc
 import (
 	"context"
 	"crypto/tls"
+	"log"
 	"reflect"
 	"sort"
 	"sync"
@@ -36,19 +37,19 @@ type ADSC struct {
 	// tcpLDS contains all listeners of type TCP (not-HTTP)
 	tcpLDS map[string]*envoy_config_listener_v3.Listener
 
-	// All received CDS of type eds, keyed by name
+	// All received cds of type eds, keyed by name
 	edsCDS map[string]*envoy_config_cluster_v3.Cluster
 
-	// All received CDS of no-eds type, keyed by name
-	CDS map[string]*envoy_config_cluster_v3.Cluster
+	// All received cds of no-eds type, keyed by name
+	cds map[string]*envoy_config_cluster_v3.Cluster
 
-	// All received RDS, keyed by route name
-	RDS map[string]*envoy_config_route_v3.RouteConfiguration
+	// All received rds, keyed by route name
+	rds map[string]*envoy_config_route_v3.RouteConfiguration
 
-	// All received endpoints, keyed by cluster name
+	// All received eds, keyed by cluster name
 	eds map[string]*envoy_config_endpoint_v3.ClusterLoadAssignment
 
-	// All received endpoints, keyed by secret name
+	// All received sds, keyed by secret name
 	sds map[string]*envoy_extensions_transport_sockets_tls_v3.Secret
 
 	HandleEDSCDS  func(clusters map[string]*envoy_config_cluster_v3.Cluster)
@@ -61,7 +62,10 @@ type ADSC struct {
 }
 
 func NewADSC(address string, t *tls.Config, node utils.NodeConfig) *ADSC {
-	a := &ADSC{}
+	a := &ADSC{
+		watchCDS: true,
+		watchLDS: true,
+	}
 	c := a.config()
 	c.NodeConfig = node
 	a.Client = xds_v3.NewClient(address, t, c)
@@ -101,12 +105,13 @@ func (a *ADSC) watch(cli *xds_v3.Client) error {
 	return nil
 }
 
-func (a *ADSC) handleCDS(xds *xds_v3.Client, ll []*envoy_config_cluster_v3.Cluster) {
-	cn := make([]string, 0, len(ll))
+func (a *ADSC) handleCDS(xds *xds_v3.Client, clusters []*envoy_config_cluster_v3.Cluster) {
+	log.Println("CDS", len(clusters))
+	cn := make([]string, 0, len(clusters))
 	secrets := []string{}
 	edscds := map[string]*envoy_config_cluster_v3.Cluster{}
 	cds := map[string]*envoy_config_cluster_v3.Cluster{}
-	for _, c := range ll {
+	for _, c := range clusters {
 		secrets = append(secrets, GetSDSName(c.TransportSocket)...)
 		switch v := c.ClusterDiscoveryType.(type) {
 		case *envoy_config_cluster_v3.Cluster_Type:
@@ -119,12 +124,9 @@ func (a *ADSC) handleCDS(xds *xds_v3.Client, ll []*envoy_config_cluster_v3.Clust
 		edscds[c.Name] = c
 	}
 
-	if len(cn) > 0 {
-		xds.SendRsc(xds_v3.EndpointType, removeDuplicates(cn))
-	}
-	if len(secrets) > 0 {
-		xds.SendRsc(xds_v3.SecretType, removeDuplicates(secrets))
-	}
+	xds.SendRsc(xds_v3.EndpointType, removeDuplicates(cn))
+	xds.SendRsc(xds_v3.SecretType, removeDuplicates(secrets))
+
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	if !reflect.DeepEqual(a.edsCDS, edscds) {
@@ -133,8 +135,8 @@ func (a *ADSC) handleCDS(xds *xds_v3.Client, ll []*envoy_config_cluster_v3.Clust
 			a.HandleEDSCDS(edscds)
 		}
 	}
-	if !reflect.DeepEqual(a.CDS, cds) {
-		a.CDS = cds
+	if !reflect.DeepEqual(a.cds, cds) {
+		a.cds = cds
 		if a.HandleCDS != nil {
 			a.HandleCDS(cds)
 		}
@@ -142,6 +144,7 @@ func (a *ADSC) handleCDS(xds *xds_v3.Client, ll []*envoy_config_cluster_v3.Clust
 }
 
 func (a *ADSC) handleEDS(xds *xds_v3.Client, eds []*envoy_config_endpoint_v3.ClusterLoadAssignment) {
+	log.Println("EDS", len(eds))
 	la := map[string]*envoy_config_endpoint_v3.ClusterLoadAssignment{}
 
 	for _, cla := range eds {
@@ -166,18 +169,19 @@ func (a *ADSC) handleEDS(xds *xds_v3.Client, eds []*envoy_config_endpoint_v3.Clu
 	}
 }
 
-func (a *ADSC) handleLDS(xds *xds_v3.Client, ll []*envoy_config_listener_v3.Listener) {
+func (a *ADSC) handleLDS(xds *xds_v3.Client, listeners []*envoy_config_listener_v3.Listener) {
+	log.Println("LDS", len(listeners))
 	lh := map[string]*envoy_config_listener_v3.Listener{}
 	lt := map[string]*envoy_config_listener_v3.Listener{}
 
 	routes := []string{}
 	secrets := []string{}
-	for _, l := range ll {
+	for _, l := range listeners {
 
 		// The last filter is the actual destination for inbound listener
 		if l.ApiListener != nil || len(l.FilterChains) == 0 {
 			// This is an API Listener
-			// TODO: extract VIP and RDS or cluster
+			// TODO: extract VIP and rds or cluster
 			continue
 		}
 		filterChain := l.FilterChains[0]
@@ -198,19 +202,16 @@ func (a *ADSC) handleLDS(xds *xds_v3.Client, ll []*envoy_config_listener_v3.List
 			//// Getting from config is too painful..
 			//port := l.Address.GetSocketAddress().GetPortValue()
 			//if port == 15002 {
-			//	RDS = append(RDS, "http_proxy")
+			//	rds = append(rds, "http_proxy")
 			//} else {
-			//	RDS = append(RDS, fmt.Sprintf("%d", port))
+			//	rds = append(rds, fmt.Sprintf("%d", port))
 			//}
 		}
 	}
 
-	if len(routes) > 0 {
-		xds.SendRsc(xds_v3.RouteType, removeDuplicates(routes))
-	}
-	if len(secrets) > 0 {
-		xds.SendRsc(xds_v3.SecretType, removeDuplicates(secrets))
-	}
+	xds.SendRsc(xds_v3.RouteType, removeDuplicates(routes))
+	xds.SendRsc(xds_v3.SecretType, removeDuplicates(secrets))
+
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	if !reflect.DeepEqual(a.httpLDS, lh) {
@@ -228,6 +229,7 @@ func (a *ADSC) handleLDS(xds *xds_v3.Client, ll []*envoy_config_listener_v3.List
 }
 
 func (a *ADSC) handleRDS(xds *xds_v3.Client, configurations []*envoy_config_route_v3.RouteConfiguration) {
+	log.Println("RDS", len(configurations))
 	rds := map[string]*envoy_config_route_v3.RouteConfiguration{}
 	for _, r := range configurations {
 		rds[r.Name] = r
@@ -235,8 +237,8 @@ func (a *ADSC) handleRDS(xds *xds_v3.Client, configurations []*envoy_config_rout
 
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	if !reflect.DeepEqual(a.RDS, rds) {
-		a.RDS = rds
+	if !reflect.DeepEqual(a.rds, rds) {
+		a.rds = rds
 		if a.HandleRDS != nil {
 			a.HandleRDS(rds)
 		}
@@ -248,6 +250,7 @@ func (a *ADSC) handleRDS(xds *xds_v3.Client, configurations []*envoy_config_rout
 }
 
 func (a *ADSC) handleSDS(xds *xds_v3.Client, secrets []*envoy_extensions_transport_sockets_tls_v3.Secret) {
+	log.Println("SDS", len(secrets))
 	sds := map[string]*envoy_extensions_transport_sockets_tls_v3.Secret{}
 	for _, r := range secrets {
 		sds[r.Name] = r
