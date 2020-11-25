@@ -111,14 +111,14 @@ func (c *ConfigCtx) save() {
 	for name, d := range c.eds {
 		componentSortd = append(componentSortd, sortd{name, d})
 	}
-	for name, d := range c.lds {
-		serviceSortd = append(serviceSortd, sortd{name, d})
-	}
 	for name, d := range c.rds {
 		componentSortd = append(componentSortd, sortd{name, d})
 	}
 	for name, d := range c.sds {
 		componentSortd = append(componentSortd, sortd{name, d})
+	}
+	for name, d := range c.lds {
+		serviceSortd = append(serviceSortd, sortd{name, d})
 	}
 
 	components := make([]bind.Component, 0, len(componentSortd))
@@ -145,26 +145,36 @@ func (c *ConfigCtx) save() {
 	sort.Slice(serviceSortd, func(i, j int) bool {
 		return serviceSortd[i].Name < serviceSortd[j].Name
 	})
-	for _, com := range serviceSortd {
-		f := com.Name + ".yml"
-		c.writeFile(f, com.Component, c.xds[com.Name])
+	for _, svc := range serviceSortd {
+		f := svc.Name + ".yml"
+		c.writeFile(f, svc.Component, c.xds[svc.Name])
 
-		if reflect.DeepEqual(com.Component, bind.NoneService{}) {
+		if reflect.DeepEqual(svc.Component, bind.NoneService{}) {
 			continue
 		}
 
-		var d bind.Service
-		switch com.Component.(type) {
-		case bind.Service:
-
-			d = bind.LoadServiceConfig{Load: bind.FileIoReaderConfig{Path: f}}
+		switch s := svc.Component.(type) {
+		default:
+			services = append(services, bind.LoadServiceConfig{
+				Load: bind.FileIoReaderConfig{
+					Path: f,
+				},
+			})
+		case *bind.DefServiceConfig:
+			components = append(components, bind.LoadServiceConfig{
+				Load: bind.FileIoReaderConfig{
+					Path: f,
+				},
+			})
+			services = append(services, bind.RefServiceConfig{
+				Name: s.Name,
+			})
 		}
-		services = append(services, d)
 	}
-	for _, d := range defaultServices {
-		components = append(components, d)
+	for _, svc := range defaultServices {
+		components = append(components, svc)
 		services = append(services, bind.RefServiceConfig{
-			Name: d.Name,
+			Name: svc.Name,
 		})
 	}
 	d := bind.MultiOnceConfig{
@@ -310,15 +320,14 @@ func BuildAdminWithHTTPHandler() bind.HTTPHandler {
 						bind.DirectNetHTTPHandlerConfig{
 							Code: http.StatusOK,
 							Body: bind.InlineIoReaderConfig{
-								Data: `<pre>
-<a href="pprof/">{{.Path}}pprof/</a>
-<a href="expvar">{{.Path}}expvar</a>
-<a href="must_quit">{{.Path}}must_quit</a>
-<a href="healthz/ready">{{.Path}}healthz/ready</a>
-<a href="stats/prometheus">{{.Path}}stats/prometheus</a>
-<a href="config_dump">{{.Path}}config_dump</a>
-<a href="config_dump_edit.sh">{{.Path}}config_dump_edit.sh</a>
-</pre>`,
+								Data: `
+http://localhost:15000/pprof/
+http://localhost:15000/expvar
+http://localhost:15000/quitquitquit
+http://localhost:15000/config_dump
+http://localhost:15021/healthz/ready
+http://localhost:15090/stats/prometheus
+`,
 							},
 						},
 					},
@@ -333,42 +342,12 @@ func BuildAdminWithHTTPHandler() bind.HTTPHandler {
 				Handler: bind.ExpvarNetHTTPHandler{},
 			},
 			{
-				Path:    "/must_quit",
+				Path:    "/quitquitquit",
 				Handler: bind.QuitNetHTTPHandler{},
 			},
 			{
 				Path:    "/config_dump",
 				Handler: bind.ConfigDumpNetHTTPHandlerConfig{},
-			},
-			{
-				Path: "/config_dump_edit.sh",
-				Handler: bind.MultiNetHTTPHandlerConfig{
-					Multi: []bind.HTTPHandler{
-						bind.DirectNetHTTPHandlerConfig{
-							Code: http.StatusOK,
-							Body: bind.InlineIoReaderConfig{
-								Data: `#!/bin/sh
-URL="{{.Scheme}}://{{.Host}}"
-RESOURCE="$URL/config_dump"
-TMP=.pipe_edit_tmp_file.yaml
-
-# Check if editing is allowed
-curl -sL -v -X OPTIONS "$RESOURCE" 2>&1 | \
-grep "< Allow:" | grep "PUT" > /dev/null || \
-{ echo "Editing Not Allowed"; exit 1;}
-
-# Editing
-curl -sL "$RESOURCE?yaml" > $TMP && \
-vi $TMP && \
-curl -sL -X PUT "$RESOURCE" -d "$(cat $TMP)" && \
-rm $TMP
-
-# sh -c "$(curl -sL {{.Scheme}}://{{.Host}}{{.Path}})"
-`,
-							},
-						},
-					},
-				},
 			},
 		},
 	}
