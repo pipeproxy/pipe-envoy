@@ -297,13 +297,21 @@ var defaultServices = []bind.DefServiceConfig{
 	},
 	{
 		Name: "_admin",
-		Def: bind.StreamServiceConfig{
-			Listener: bind.ListenerStreamListenConfigConfig{
-				Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
-				Address: ":15000",
-			},
-			Handler: bind.HTTP1StreamHandlerConfig{
-				Handler: BuildAdminWithHTTPHandler(),
+		Def: bind.TagsServiceConfig{
+			Tag: "admin",
+			Service: bind.StreamServiceConfig{
+				Listener: bind.ListenerStreamListenConfigConfig{
+					Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
+					Address: ":15000",
+				},
+				Handler: bind.HTTP1StreamHandlerConfig{
+					Handler: bind.LogNetHTTPHandlerConfig{
+						Output: bind.FileIoWriterConfig{
+							Path: "/dev/stderr",
+						},
+						Handler: BuildAdminWithHTTPHandler(),
+					},
+				},
 			},
 		},
 	},

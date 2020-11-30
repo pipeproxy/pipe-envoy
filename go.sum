@@ -799,8 +799,8 @@ github.com/pierrec/lz4 v2.0.5+incompatible h1:2xWsjqPFWcplujydGg4WmhC/6fZqK42wMM
 github.com/pierrec/lz4 v2.0.5+incompatible/go.mod h1:pdkljMzZIN41W+lC3N2tnIh5sFi+IEE17M5jbnwPHcY=
 github.com/pierrec/lz4/v3 v3.3.2 h1:QTUOCbMNDbK4PYtkuHyOBd28C0UhPBw3T4OH4WpFDik=
 github.com/pierrec/lz4/v3 v3.3.2/go.mod h1:280XNCGS8jAcG++AHdd6SeWnzyJ1w9oow2vbORyey8Q=
-github.com/pipeproxy/pipe v0.4.13 h1:WbrE1QQBBxMoQY6fWXxykWqENtNoRFondskzKnVR4jY=
-github.com/pipeproxy/pipe v0.4.13/go.mod h1:oaL+stgVWsg21Og7EyWZDbY7ejyBM3kIUbcocRq6/8w=
+github.com/pipeproxy/pipe v0.4.14 h1:0WngAXAiLi8OrefkfzXMAE44nfWpgtfxnkCwj7VRLOA=
+github.com/pipeproxy/pipe v0.4.14/go.mod h1:fVvEupWbJ2ihcyWk/iSLYtBz/9wlZnshG8dWTCnlQ8k=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1-0.20171018195549-f15c970de5b7/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
@@ -1006,7 +1006,7 @@ github.com/wzshiming/gotype v0.6.3/go.mod h1:7YULvVsDObRVX2U6iUcF5hixYvHFavLsTSI
 github.com/wzshiming/inject v0.1.0 h1:jIxBvu1uZu1hmTtlVT8KyBqXNKwWZoM7+AipVCLr2bE=
 github.com/wzshiming/inject v0.1.0/go.mod h1:TMwIIbf/euizgbEFavNdWAudPr7tO9kM0UOLxJJgJkY=
 github.com/wzshiming/lockfile v0.0.5/go.mod h1:vhWLDg1zBZYjo0UGrKCzCa8V+exb/6pq3H9yAulhpHM=
-github.com/wzshiming/logger v0.0.0-20201120123225-10f5d60851cc/go.mod h1:ZrCaVKS2W7/ivqWwOXmW7GuOlTe3jC6RCDyP48cJCqc=
+github.com/wzshiming/logger v0.0.0-20201130102445-8496ab0eee53/go.mod h1:ZrCaVKS2W7/ivqWwOXmW7GuOlTe3jC6RCDyP48cJCqc=
 github.com/wzshiming/namecase v0.2.0/go.mod h1:FJT9Q8a289dtinO3AJUDKqRP9UQzq9UxpWDevdDVvYA=
 github.com/wzshiming/notify v0.0.5 h1:c/S99kE2S1jNt74hg5bpmM0DFATEHNg5NDgl8sYKAfo=
 github.com/wzshiming/notify v0.0.5/go.mod h1:SFhsQKZJznzsDcj/Qfo9A65k5IRcpUrpgbLRzZEa/DI=

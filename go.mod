@@ -12,7 +12,7 @@ replace (
 require (
 	github.com/envoyproxy/go-control-plane v0.9.8-0.20201019204000-12785f608982
 	github.com/golang/protobuf v1.4.3
-	github.com/pipeproxy/pipe v0.4.13
+	github.com/pipeproxy/pipe v0.4.14
 	github.com/spf13/cobra v1.1.1
 	github.com/wzshiming/gotype v0.6.3
 	github.com/wzshiming/notify v0.0.5
