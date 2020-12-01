@@ -43,7 +43,10 @@ func Convert_config_listener_v3_Listener(conf *config.ConfigCtx, c *envoy_config
 	if c.Name != "" {
 		d = bind.DefServiceConfig{
 			Name: c.Name,
-			Def:  d,
+			Def: bind.TagsServiceConfig{
+				Service: d,
+				Tag:     c.Name,
+			},
 		}
 	}
 	return d, nil

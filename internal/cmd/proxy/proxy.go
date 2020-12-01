@@ -99,7 +99,7 @@ var (
 				if len(kv) == 2 {
 					for _, prefix := range xdsHeaderPrefix {
 						if strings.HasPrefix(kv[0], prefix) {
-							metadata[kv[0][len(xdsHeaderPrefix):]] = kv[1]
+							metadata[kv[0][len(prefix):]] = kv[1]
 							break
 						}
 					}
