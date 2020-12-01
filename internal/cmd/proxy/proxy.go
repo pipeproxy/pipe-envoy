@@ -135,7 +135,7 @@ var (
 				Metadata: metadata,
 			})
 
-			cc := config.NewConfigCtx(ctx, ads, tmp)
+			cc := config.NewConfigCtx(ctx, ads, tmp, time.Second/2)
 
 			ads.HandleCDS = func(clusters map[string]*envoy_config_cluster_v3.Cluster) {
 				for name, cluster := range clusters {

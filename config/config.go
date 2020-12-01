@@ -38,9 +38,10 @@ type ConfigCtx struct {
 	sds      map[string]bind.TLS
 	xds      map[string]proto.Message
 	updateCh chan struct{}
+	interval time.Duration
 }
 
-func NewConfigCtx(ctx context.Context, cli *adsc.ADSC, basePath string) *ConfigCtx {
+func NewConfigCtx(ctx context.Context, cli *adsc.ADSC, basePath string, interval time.Duration) *ConfigCtx {
 	return &ConfigCtx{
 		cli:      cli,
 		ctx:      ctx,
@@ -52,6 +53,7 @@ func NewConfigCtx(ctx context.Context, cli *adsc.ADSC, basePath string) *ConfigC
 		sds:      map[string]bind.TLS{},
 		xds:      map[string]proto.Message{},
 		updateCh: make(chan struct{}, 1),
+		interval: interval,
 	}
 }
 
@@ -220,7 +222,7 @@ func (c *ConfigCtx) startPipe(ctx context.Context) error {
 				for {
 					select {
 					case <-c.updateCh:
-					case <-time.After(time.Second / 10):
+					case <-time.After(c.interval):
 						c.save()
 						cmd.Process.Signal(syscall.SIGHUP)
 						continue loop
