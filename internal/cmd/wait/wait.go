@@ -19,12 +19,12 @@ var (
 
 	waitCmd = &cobra.Command{
 		Use:   "wait",
-		Short: "Waits until the Envoy proxy is ready",
+		Short: "Waits until the Pipe proxy is ready",
 		RunE: func(c *cobra.Command, args []string) error {
 			client := &http.Client{
 				Timeout: time.Duration(requestTimeoutMillis) * time.Millisecond,
 			}
-			log.Infof("Waiting for Envoy proxy to be ready (timeout: %d seconds)...", timeoutSeconds)
+			log.Infof("Waiting for Pipe proxy to be ready (timeout: %d seconds)...", timeoutSeconds)
 
 			var err error
 			timeoutAt := time.Now().Add(time.Duration(timeoutSeconds) * time.Second)
@@ -37,7 +37,7 @@ var (
 				log.Debugf("Not ready yet: %v", err)
 				time.Sleep(time.Duration(periodMillis) * time.Millisecond)
 			}
-			return fmt.Errorf("timeout waiting for Envoy proxy to become ready. Last error: %v", err)
+			return fmt.Errorf("timeout waiting for Pipe proxy to become ready. Last error: %v", err)
 		},
 	}
 )

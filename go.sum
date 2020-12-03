@@ -799,8 +799,8 @@ github.com/pierrec/lz4 v2.0.5+incompatible h1:2xWsjqPFWcplujydGg4WmhC/6fZqK42wMM
 github.com/pierrec/lz4 v2.0.5+incompatible/go.mod h1:pdkljMzZIN41W+lC3N2tnIh5sFi+IEE17M5jbnwPHcY=
 github.com/pierrec/lz4/v3 v3.3.2 h1:QTUOCbMNDbK4PYtkuHyOBd28C0UhPBw3T4OH4WpFDik=
 github.com/pierrec/lz4/v3 v3.3.2/go.mod h1:280XNCGS8jAcG++AHdd6SeWnzyJ1w9oow2vbORyey8Q=
-github.com/pipeproxy/pipe v0.4.14 h1:0WngAXAiLi8OrefkfzXMAE44nfWpgtfxnkCwj7VRLOA=
-github.com/pipeproxy/pipe v0.4.14/go.mod h1:fVvEupWbJ2ihcyWk/iSLYtBz/9wlZnshG8dWTCnlQ8k=
+github.com/pipeproxy/pipe v0.4.15 h1:/pp61UdVIe5GgVHaY1jJT6edrnrjE5NmBT1feNFkMno=
+github.com/pipeproxy/pipe v0.4.15/go.mod h1:fVvEupWbJ2ihcyWk/iSLYtBz/9wlZnshG8dWTCnlQ8k=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1-0.20171018195549-f15c970de5b7/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=

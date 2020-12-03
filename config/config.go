@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
+	"sync"
 	"syscall"
 	"time"
 
@@ -39,6 +40,7 @@ type ConfigCtx struct {
 	xds      map[string]proto.Message
 	updateCh chan struct{}
 	interval time.Duration
+	mux      sync.Mutex
 }
 
 func NewConfigCtx(ctx context.Context, cli *adsc.ADSC, basePath string, interval time.Duration) *ConfigCtx {
@@ -74,36 +76,48 @@ func (c *ConfigCtx) SetNodeID(nodeid string) {
 }
 
 func (c *ConfigCtx) RegisterCDS(name string, dialer bind.StreamDialer, msg proto.Message) {
+	c.mux.Lock()
+	defer c.mux.Unlock()
 	c.cds[name] = dialer
 	c.xds[name] = msg
 	c.update()
 }
 
 func (c *ConfigCtx) RegisterEDS(name string, dialer bind.StreamDialer, msg proto.Message) {
+	c.mux.Lock()
+	defer c.mux.Unlock()
 	c.eds[name] = dialer
 	c.xds[name] = msg
 	c.update()
 }
 
 func (c *ConfigCtx) RegisterLDS(name string, service bind.Service, msg proto.Message) {
+	c.mux.Lock()
+	defer c.mux.Unlock()
 	c.lds[name] = service
 	c.xds[name] = msg
 	c.update()
 }
 
 func (c *ConfigCtx) RegisterRDS(name string, handler bind.HTTPHandler, msg proto.Message) {
+	c.mux.Lock()
+	defer c.mux.Unlock()
 	c.rds[name] = handler
 	c.xds[name] = msg
 	c.update()
 }
 
 func (c *ConfigCtx) RegisterSDS(name string, tls bind.TLS, msg proto.Message) {
+	c.mux.Lock()
+	defer c.mux.Unlock()
 	c.sds[name] = tls
 	c.xds[name] = msg
 	c.update()
 }
 
 func (c *ConfigCtx) save() {
+	c.mux.Lock()
+	defer c.mux.Unlock()
 	componentSortd := []sortd{}
 	serviceSortd := []sortd{}
 
@@ -226,6 +240,9 @@ func (c *ConfigCtx) startPipe(ctx context.Context) error {
 						c.save()
 						cmd.Process.Signal(syscall.SIGHUP)
 						continue loop
+					case <-ctx.Done():
+						cmd.Process.Signal(syscall.SIGQUIT)
+						break loop
 					}
 				}
 			case <-ctx.Done():
@@ -275,25 +292,31 @@ var comm = []byte{'\n', '#', ' '}
 var defaultServices = []bind.DefServiceConfig{
 	{
 		Name: "_health",
-		Def: bind.StreamServiceConfig{
-			Listener: bind.ListenerStreamListenConfigConfig{
-				Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
-				Address: ":15021",
-			},
-			Handler: bind.HTTP1StreamHandlerConfig{
-				Handler: BuildHealthWithHTTPHandler(),
+		Def: bind.TagsServiceConfig{
+			Tag: "health",
+			Service: bind.StreamServiceConfig{
+				Listener: bind.ListenerStreamListenConfigConfig{
+					Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
+					Address: ":15021",
+				},
+				Handler: bind.HTTP1StreamHandlerConfig{
+					Handler: BuildHealthWithHTTPHandler(),
+				},
 			},
 		},
 	},
 	{
 		Name: "_metric",
-		Def: bind.StreamServiceConfig{
-			Listener: bind.ListenerStreamListenConfigConfig{
-				Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
-				Address: ":15090",
-			},
-			Handler: bind.HTTP1StreamHandlerConfig{
-				Handler: BuildPrometheusWithHTTPHandler(),
+		Def: bind.TagsServiceConfig{
+			Tag: "metric",
+			Service: bind.StreamServiceConfig{
+				Listener: bind.ListenerStreamListenConfigConfig{
+					Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
+					Address: ":15090",
+				},
+				Handler: bind.HTTP1StreamHandlerConfig{
+					Handler: BuildPrometheusWithHTTPHandler(),
+				},
 			},
 		},
 	},

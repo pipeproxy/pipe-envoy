@@ -73,7 +73,7 @@ var (
 
 	proxyCmd = &cobra.Command{
 		Use:   "proxy",
-		Short: "Envoy proxy agent",
+		Short: "Pipe proxy agent",
 		FParseErrWhitelist: cobra.FParseErrWhitelist{
 			// Allow unknown flags for backward-compatibility.
 			UnknownFlags: true,
@@ -110,8 +110,8 @@ var (
 			metadataJSON := string(metadataBytes)
 			log.Println("xds server", url)
 			log.Println("metadata", metadataJSON)
-
 			nodeId := fmt.Sprintf("%s~%s~%s.%s~%s", proxyType, podIP, podName, podNamespace, DNSDomain)
+			log.Println("node id", nodeId)
 
 			notify.OnSlice([]os.Signal{syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM}, cancel)
 
@@ -209,7 +209,7 @@ var (
 			}
 
 			go func() {
-				for {
+				for ctx.Err() == nil {
 					err = ads.Run(ctx)
 					if err != nil {
 						log.Println(err)
@@ -223,6 +223,7 @@ var (
 				if err != nil {
 					log.Println(err)
 				}
+				time.Sleep(time.Second)
 			}
 			return nil
 		},
@@ -230,7 +231,7 @@ var (
 )
 
 func init() {
-	proxyCmd.PersistentFlags().StringVar(&DNSDomain, "domain", "",
+	proxyCmd.PersistentFlags().StringVar(&DNSDomain, "domain", fmt.Sprintf("%s.svc.cluster.local", os.Getenv("POD_NAMESPACE")),
 		"DNS domain suffix. If not provided uses ${POD_NAMESPACE}.svc.cluster.local")
 	proxyCmd.PersistentFlags().StringVar(&meshConfigFile, "meshConfig", "./etc/istio/config/mesh",
 		"File name for Istio mesh configuration. If not specified, a default mesh will be used. This may be overridden by "+
@@ -239,15 +240,15 @@ func init() {
 		"HTTP Port on which to serve Security Token Service (STS). If zero, STS service will not be provided.")
 	proxyCmd.PersistentFlags().StringVar(&tokenManagerPlugin, "tokenManagerPlugin", tokenmanager.GoogleTokenExchange,
 		"Token provider specific plugin name.")
+
 	// Flags for proxy configuration
 	proxyCmd.PersistentFlags().StringVar(&serviceCluster, "serviceCluster", constants.ServiceClusterName, "Service cluster")
-	// Log levels are provided by the library https://github.com/gabime/spdlog, used by Envoy.
 	proxyCmd.PersistentFlags().StringVar(&proxyLogLevel, "proxyLogLevel", "warning",
-		fmt.Sprintf("The log level used to start the Envoy proxy (choose from {%s, %s, %s, %s, %s, %s, %s})",
+		fmt.Sprintf("The log level used to start the Pipe proxy (choose from {%s, %s, %s, %s, %s, %s, %s})",
 			"trace", "debug", "info", "warning", "error", "critical", "off"))
 	proxyCmd.PersistentFlags().IntVar(&concurrency, "concurrency", 0, "number of worker threads to run")
 	proxyCmd.PersistentFlags().StringVar(&proxyComponentLogLevel, "proxyComponentLogLevel", "misc:error",
-		"The component log level used to start the Envoy proxy")
+		"The component log level used to start the Pipe proxy")
 	proxyCmd.PersistentFlags().StringVar(&templateFile, "templateFile", "",
 		"Go template bootstrap config")
 	proxyCmd.PersistentFlags().StringVar(&outlierLogPath, "outlierLogPath", "",

@@ -11,7 +11,6 @@ import (
 	cleaniptables "istio.io/istio/tools/istio-clean-iptables/pkg/cmd"
 	iptables "istio.io/istio/tools/istio-iptables/pkg/cmd"
 	"istio.io/pkg/log"
-	"istio.io/pkg/version"
 )
 
 var (
@@ -36,7 +35,6 @@ func init() {
 	cmd.AddFlags(rootCmd)
 
 	rootCmd.AddCommand(proxy.GetCommand())
-	rootCmd.AddCommand(version.CobraCommand())
 	rootCmd.AddCommand(iptables.GetCommand())
 	rootCmd.AddCommand(cleaniptables.GetCommand())
 	rootCmd.AddCommand(wait.GetCommand())
