@@ -108,7 +108,7 @@ var (
 
 			metadataBytes, _ := json.Marshal(metadata)
 			metadataJSON := string(metadataBytes)
-			log.Println("xds server", url)
+			log.Println("xds server", url.Get())
 			log.Println("metadata", metadataJSON)
 			nodeId := fmt.Sprintf("%s~%s~%s.%s~%s", proxyType, podIP, podName, podNamespace, DNSDomain)
 			log.Println("node id", nodeId)

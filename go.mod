@@ -16,7 +16,7 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/wzshiming/gotype v0.6.3
 	github.com/wzshiming/notify v0.0.5
-	github.com/wzshiming/xds v0.2.2
+	github.com/wzshiming/xds v0.2.3
 	google.golang.org/grpc v1.33.1
 	google.golang.org/protobuf v1.25.0
 	istio.io/api v0.0.0-20201120175956-c2df7c41fd8e // indirect
