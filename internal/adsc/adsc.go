@@ -52,6 +52,9 @@ type ADSC struct {
 	// All received sds, keyed by secret name
 	sds map[string]*envoy_extensions_transport_sockets_tls_v3.Secret
 
+	cdsSecrets []string
+	ldsSecrets []string
+
 	HandleEDSCDS  func(clusters map[string]*envoy_config_cluster_v3.Cluster)
 	HandleCDS     func(clusters map[string]*envoy_config_cluster_v3.Cluster)
 	HandleRDS     func(clusters map[string]*envoy_config_route_v3.RouteConfiguration)
@@ -124,8 +127,11 @@ func (a *ADSC) handleCDS(xds *xds_v3.Client, clusters []*envoy_config_cluster_v3
 		edscds[c.Name] = c
 	}
 
-	xds.SendRsc(xds_v3.EndpointType, removeDuplicates(cn))
-	xds.SendRsc(xds_v3.SecretType, removeDuplicates(secrets))
+	cn = removeDuplicates(cn)
+	if len(cn) != 0 {
+		xds.SendRsc(xds_v3.EndpointType, cn)
+	}
+	a.cdsSecrets = removeDuplicates(secrets)
 
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -164,7 +170,7 @@ func (a *ADSC) handleEDS(xds *xds_v3.Client, eds []*envoy_config_endpoint_v3.Clu
 		if a.watchLDS {
 			xds.SendRsc(xds_v3.ListenerType, nil)
 		} else {
-			a.initialLoad = time.Since(a.watchTime)
+			a.initialDone(xds)
 		}
 	}
 }
@@ -184,7 +190,7 @@ func (a *ADSC) handleLDS(xds *xds_v3.Client, listeners []*envoy_config_listener_
 			// TODO: extract VIP and rds or cluster
 			continue
 		}
-		filterChain := l.FilterChains[0]
+		filterChain := SelectFilterChain(l.FilterChains)
 		secrets = append(secrets, GetSDSName(filterChain.TransportSocket)...)
 		filter := filterChain.Filters[0]
 		if filter.Name == wellknown.TCPProxy {
@@ -209,8 +215,11 @@ func (a *ADSC) handleLDS(xds *xds_v3.Client, listeners []*envoy_config_listener_
 		}
 	}
 
-	xds.SendRsc(xds_v3.RouteType, removeDuplicates(routes))
-	xds.SendRsc(xds_v3.SecretType, removeDuplicates(secrets))
+	routes = removeDuplicates(routes)
+	if len(routes) != 0 {
+		xds.SendRsc(xds_v3.RouteType, routes)
+	}
+	a.ldsSecrets = removeDuplicates(secrets)
 
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -245,8 +254,17 @@ func (a *ADSC) handleRDS(xds *xds_v3.Client, configurations []*envoy_config_rout
 	}
 
 	if a.initialLoad == 0 {
-		a.initialLoad = time.Since(a.watchTime)
+		a.initialDone(xds)
 	}
+}
+
+func (a *ADSC) initialDone(xds *xds_v3.Client) {
+	a.initialLoad = time.Since(a.watchTime)
+	secrets := make([]string, 0, len(a.cdsSecrets)+len(a.ldsSecrets))
+	secrets = append(secrets, a.cdsSecrets...)
+	secrets = append(secrets, a.ldsSecrets...)
+	secrets = removeDuplicates(secrets)
+	xds.SendRsc(xds_v3.SecretType, secrets)
 }
 
 func (a *ADSC) handleSDS(xds *xds_v3.Client, secrets []*envoy_extensions_transport_sockets_tls_v3.Secret) {

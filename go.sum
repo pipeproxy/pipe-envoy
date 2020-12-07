@@ -1011,8 +1011,8 @@ github.com/wzshiming/namecase v0.2.0/go.mod h1:FJT9Q8a289dtinO3AJUDKqRP9UQzq9Uxp
 github.com/wzshiming/notify v0.0.5 h1:c/S99kE2S1jNt74hg5bpmM0DFATEHNg5NDgl8sYKAfo=
 github.com/wzshiming/notify v0.0.5/go.mod h1:SFhsQKZJznzsDcj/Qfo9A65k5IRcpUrpgbLRzZEa/DI=
 github.com/wzshiming/trie v0.0.1/go.mod h1:Z20IrQFTHnjWz//dssIoiEPWInBZFyuFlPOFPxV0Rec=
-github.com/wzshiming/xds v0.2.2 h1:rk6enhoLRiCznq23BkCtfOphiOSj55oME80zhQv5BLk=
-github.com/wzshiming/xds v0.2.2/go.mod h1:ui0qvx21jzGoWrOTrqgVpVd7HX/2h4scIigOwb8dBbs=
+github.com/wzshiming/xds v0.2.3 h1:Nq5uJ2NHbkV7B1zgFy1eN3JX5uk8oUTGlzc15Gor1F8=
+github.com/wzshiming/xds v0.2.3/go.mod h1:ui0qvx21jzGoWrOTrqgVpVd7HX/2h4scIigOwb8dBbs=
 github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
 github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb h1:zGWFAtiMcyryUHoUjUJX0/lt1H2+i2Ka2n+D3DImSNo=
 github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
