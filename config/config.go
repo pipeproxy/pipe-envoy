@@ -296,7 +296,7 @@ var defaultServices = []bind.DefServiceConfig{
 			Tag: "health",
 			Service: bind.StreamServiceConfig{
 				Listener: bind.ListenerStreamListenConfigConfig{
-					Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
+					Network: bind.ListenerStreamListenConfigNetworkEnumEnumNetworkTCP,
 					Address: ":15021",
 				},
 				Handler: bind.HTTP1StreamHandlerConfig{
@@ -311,7 +311,7 @@ var defaultServices = []bind.DefServiceConfig{
 			Tag: "metric",
 			Service: bind.StreamServiceConfig{
 				Listener: bind.ListenerStreamListenConfigConfig{
-					Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
+					Network: bind.ListenerStreamListenConfigNetworkEnumEnumNetworkTCP,
 					Address: ":15090",
 				},
 				Handler: bind.HTTP1StreamHandlerConfig{
@@ -326,7 +326,7 @@ var defaultServices = []bind.DefServiceConfig{
 			Tag: "admin",
 			Service: bind.StreamServiceConfig{
 				Listener: bind.ListenerStreamListenConfigConfig{
-					Network: bind.ListenerStreamListenConfigListenerNetworkEnumEnumTCP,
+					Network: bind.ListenerStreamListenConfigNetworkEnumEnumNetworkTCP,
 					Address: ":15000",
 				},
 				Handler: bind.HTTP1StreamHandlerConfig{

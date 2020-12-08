@@ -68,6 +68,7 @@ var (
 	podNameVar      = env.RegisterStringVar("POD_NAME", "", "")
 	podNamespaceVar = env.RegisterStringVar("POD_NAMESPACE", "", "")
 	clusterIDVar    = env.RegisterStringVar("ISTIO_META_CLUSTER_ID", "", "")
+	nodeID          = env.RegisterStringVar("NODE_ID", "", "")
 
 	url = env.RegisterStringVar("ISTIOD_ADDRESS", "istiod.istio-system.svc:15010", "")
 
@@ -110,7 +111,10 @@ var (
 			metadataJSON := string(metadataBytes)
 			log.Println("xds server", url.Get())
 			log.Println("metadata", metadataJSON)
-			nodeId := fmt.Sprintf("%s~%s~%s.%s~%s", proxyType, podIP, podName, podNamespace, DNSDomain)
+			nodeId := nodeID.Get()
+			if nodeId == "" {
+				nodeId = fmt.Sprintf("%s~%s~%s.%s~%s", proxyType, podIP, podName, podNamespace, DNSDomain)
+			}
 			log.Println("node id", nodeId)
 
 			notify.OnSlice([]os.Signal{syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM}, cancel)

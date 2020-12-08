@@ -17,7 +17,7 @@ func Convert_config_endpoint_v3_LbEndpoint(conf *config.ConfigCtx, c *envoy_conf
 			return nil, err
 		}
 		return bind.DialerStreamDialerConfig{
-			Network: bind.DialerStreamDialerDialerNetworkEnum(network),
+			Network: bind.DialerStreamDialerNetworkEnum(network),
 			Address: address,
 		}, nil
 	case *envoy_config_endpoint_v3.LbEndpoint_EndpointName:

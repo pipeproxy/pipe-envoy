@@ -28,7 +28,7 @@ func Convert_config_endpoint_v3_ClusterLoadAssignment(conf *config.ConfigCtx, c 
 		d = dialers[0].Dialer
 	default:
 		d = bind.LbStreamDialerConfig{
-			Policy:  bind.LbStreamDialerLoadBalancePolicyEnumEnumRoundRobin,
+			Policy:  bind.RoundRobinBalancePolicy{},
 			Dialers: dialers,
 		}
 	}

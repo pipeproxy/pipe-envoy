@@ -35,7 +35,7 @@ func Convert_config_listener_v3_Listener(conf *config.ConfigCtx, c *envoy_config
 	d = bind.StreamServiceConfig{
 		DisconnectOnClose: true,
 		Listener: bind.ListenerStreamListenConfigConfig{
-			Network: bind.ListenerStreamListenConfigListenerNetworkEnum(network),
+			Network: bind.ListenerStreamListenConfigNetworkEnum(network),
 			Address: address,
 			Virtual: c.DeprecatedV1 != nil && !c.DeprecatedV1.BindToPort.GetValue(),
 		},

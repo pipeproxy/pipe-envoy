@@ -32,7 +32,7 @@ func Convert_extensions_filters_network_tcp_proxy_v3_TcpProxy(conf *config.Confi
 			d = dialers[0].Dialer
 		default:
 			d = bind.LbStreamDialerConfig{
-				Policy:  bind.LbStreamDialerLoadBalancePolicyEnumEnumRoundRobin,
+				Policy:  bind.RoundRobinBalancePolicy{},
 				Dialers: dialers,
 			}
 		}
