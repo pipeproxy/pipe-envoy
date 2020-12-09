@@ -343,8 +343,8 @@ var defaultServices = []bind.DefServiceConfig{
 }
 
 func BuildAdminWithHTTPHandler() bind.HTTPHandler {
-	return bind.MuxNetHTTPHandlerConfig{
-		Routes: []bind.MuxNetHTTPHandlerRoute{
+	return bind.PathNetHTTPHandlerConfig{
+		Paths: []bind.PathNetHTTPHandlerRoute{
 			{
 				Path: "/",
 				Handler: bind.MultiNetHTTPHandlerConfig{
@@ -387,8 +387,8 @@ http://localhost:15090/stats/prometheus
 }
 
 func BuildHealthWithHTTPHandler() bind.HTTPHandler {
-	return bind.MuxNetHTTPHandlerConfig{
-		Routes: []bind.MuxNetHTTPHandlerRoute{
+	return bind.PathNetHTTPHandlerConfig{
+		Paths: []bind.PathNetHTTPHandlerRoute{
 			{
 				Path: "/healthz/ready",
 				Handler: bind.DirectNetHTTPHandlerConfig{
@@ -403,8 +403,8 @@ func BuildHealthWithHTTPHandler() bind.HTTPHandler {
 }
 
 func BuildPrometheusWithHTTPHandler() bind.HTTPHandler {
-	return bind.MuxNetHTTPHandlerConfig{
-		Routes: []bind.MuxNetHTTPHandlerRoute{
+	return bind.PathNetHTTPHandlerConfig{
+		Paths: []bind.PathNetHTTPHandlerRoute{
 			{
 				Path:    "/stats/prometheus",
 				Handler: bind.MetricsNetHTTPHandler{},
