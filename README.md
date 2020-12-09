@@ -9,6 +9,12 @@
 
 As far as possible compatible with xDS data plane.  
 
+## Install
+
+``` shell
+wget -O pipe-xds-manifests.yaml https://github.com/pipeproxy/pipe-xds/raw/master/manifests/profiles/default.yaml && istioctl manifest generate -f pipe-xds-manifests.yaml | kubectl apply -f -
+```
+
 ## License
 
 Pouch is licensed under the MIT License. See [LICENSE](https://github.com/pipeproxy/pipe-xds/blob/master/LICENSE) for the full license text.

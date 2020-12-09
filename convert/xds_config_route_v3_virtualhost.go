@@ -14,16 +14,16 @@ func Convert_config_route_v3_VirtualHost(conf *config.ConfigCtx, name string, c 
 	for i := range c.Routes {
 		index := len(c.Routes) - 1 - i
 		route := c.Routes[index]
-		name := fmt.Sprintf("%s|%s|%s|%d", name, c.Name, route.Name, index)
 		handler, err := Convert_config_route_v3_Route(conf, route)
 		if err != nil {
 			return nil, err
 		}
+		name := fmt.Sprintf("%s|%s|%s|%d", name, c.Name, route.Name, index)
 		routeName := name + ".route"
 		conf.RegisterRDS("rds.http."+routeName, bind.DefNetHTTPHandlerConfig{
 			Name: routeName,
 			Def:  handler,
-		}, route)
+		}, nil)
 		handler = bind.RefNetHTTPHandlerConfig{
 			Name: routeName,
 		}
@@ -70,16 +70,19 @@ func Convert_config_route_v3_VirtualHost(conf *config.ConfigCtx, name string, c 
 		routeName = name + ".match.path"
 		path := Convert_config_route_v3_RouteMatch_Path(conf, route.Match, handler)
 		paths := bind.PathNetHTTPHandlerConfig{
-			Paths:    []bind.PathNetHTTPHandlerRoute{path},
+			Paths: []bind.PathNetHTTPHandlerRoute{
+				path,
+			},
 			NotFound: h,
 		}
 		conf.RegisterRDS("rds.http."+routeName, bind.DefNetHTTPHandlerConfig{
 			Name: routeName,
 			Def:  paths,
 		}, nil)
-		h = bind.RefNetHTTPHandlerConfig{
+		handler = bind.RefNetHTTPHandlerConfig{
 			Name: routeName,
 		}
+		h = handler
 	}
 
 	var handers []bind.HTTPHandler
