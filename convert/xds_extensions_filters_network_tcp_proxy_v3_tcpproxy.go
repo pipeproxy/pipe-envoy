@@ -15,27 +15,11 @@ func Convert_extensions_filters_network_tcp_proxy_v3_TcpProxy(conf *config.Confi
 			Name: s.Cluster,
 		}
 	case *envoy_extensions_filters_network_tcp_proxy_v3.TcpProxy_WeightedClusters:
-		dialers := []bind.LbStreamDialerWeight{}
-		for _, cluster := range s.WeightedClusters.Clusters {
-			dialers = append(dialers, bind.LbStreamDialerWeight{
-				Weight: uint(cluster.Weight),
-				Dialer: bind.RefStreamDialerConfig{
-					Name: cluster.Name,
-				},
-			})
+		d0, err := Convert_extensions_filters_network_tcp_proxy_v3_TcpProxy_WeightedCluster(conf, s.WeightedClusters)
+		if err != nil {
+			return nil, err
 		}
-
-		switch len(dialers) {
-		case 0:
-			d = bind.NoneStreamDialer{}
-		case 1:
-			d = dialers[0].Dialer
-		default:
-			d = bind.LbStreamDialerConfig{
-				Policy:  bind.RoundRobinBalancePolicy{},
-				Dialers: dialers,
-			}
-		}
+		d = d0
 	}
 
 	var s bind.StreamHandler

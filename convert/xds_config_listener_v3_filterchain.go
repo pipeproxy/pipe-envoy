@@ -39,17 +39,7 @@ func Convert_config_listener_v3_FilterChain(conf *config.ConfigCtx, c *envoy_con
 	isHttp := httpStream != nil
 	isTcp := tcpStream != nil
 	switch {
-	case isHttp && isTcp:
-		lastStream = bind.MuxStreamHandlerConfig{
-			Routes: []bind.MuxStreamHandlerRoute{
-				{
-					Pattern: "http",
-					Handler: httpStream,
-				},
-			},
-			NotFound: tcpStream,
-		}
-	case isHttp && !isTcp:
+	case isHttp:
 		lastStream = httpStream
 	case isTcp && !isHttp:
 		lastStream = tcpStream
