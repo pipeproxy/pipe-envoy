@@ -12,9 +12,7 @@ import (
 func Convert_extensions_filters_network_http_connection_manager_v3_Rds(conf *config.ConfigCtx, c *envoy_extensions_filters_network_http_connection_manager_v3.Rds) (bind.HTTPHandler, error) {
 	name := c.RouteConfigName
 	if name != "" {
-		return bind.RefNetHTTPHandlerConfig{
-			Name: name,
-		}, nil
+		return conf.RDS(name), nil
 	}
 
 	data, _ := encoding.Marshal(c)

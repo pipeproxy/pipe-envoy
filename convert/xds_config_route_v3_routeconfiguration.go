@@ -84,10 +84,7 @@ func Convert_config_route_v3_RouteConfiguration(conf *config.ConfigCtx, c *envoy
 	}
 
 	if c.Name != "" {
-		d = bind.DefNetHTTPHandlerConfig{
-			Name: c.Name,
-			Def:  d,
-		}
+		d = conf.RegisterRDS(c.Name, d, c)
 	}
 	return d, nil
 }

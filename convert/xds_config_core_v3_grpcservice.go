@@ -12,9 +12,7 @@ import (
 func Convert_config_core_v3_GrpcService(conf *config.ConfigCtx, c *envoy_config_core_v3.GrpcService) (bind.StreamDialer, error) {
 	switch t := c.TargetSpecifier.(type) {
 	case *envoy_config_core_v3.GrpcService_EnvoyGrpc_:
-		return bind.RefStreamDialerConfig{
-			Name: t.EnvoyGrpc.ClusterName,
-		}, nil
+		return conf.CDS(t.EnvoyGrpc.ClusterName), nil
 	case *envoy_config_core_v3.GrpcService_GoogleGrpc_:
 	}
 	data, _ := encoding.Marshal(c)

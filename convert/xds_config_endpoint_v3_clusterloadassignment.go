@@ -34,10 +34,7 @@ func Convert_config_endpoint_v3_ClusterLoadAssignment(conf *config.ConfigCtx, c 
 	}
 
 	if c.ClusterName != "" {
-		d = bind.DefStreamDialerConfig{
-			Name: "eds." + c.ClusterName,
-			Def:  d,
-		}
+		d = conf.RegisterEDS(c.ClusterName, d, c)
 	}
 	return d, nil
 }

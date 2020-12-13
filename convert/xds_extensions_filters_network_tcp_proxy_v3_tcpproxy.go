@@ -11,9 +11,7 @@ func Convert_extensions_filters_network_tcp_proxy_v3_TcpProxy(conf *config.Confi
 
 	switch s := c.ClusterSpecifier.(type) {
 	case *envoy_extensions_filters_network_tcp_proxy_v3.TcpProxy_Cluster:
-		d = bind.RefStreamDialerConfig{
-			Name: s.Cluster,
-		}
+		d = conf.CDS(s.Cluster)
 	case *envoy_extensions_filters_network_tcp_proxy_v3.TcpProxy_WeightedClusters:
 		d0, err := Convert_extensions_filters_network_tcp_proxy_v3_TcpProxy_WeightedCluster(conf, s.WeightedClusters)
 		if err != nil {

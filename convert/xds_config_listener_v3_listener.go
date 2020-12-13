@@ -44,13 +44,10 @@ func Convert_config_listener_v3_Listener(conf *config.ConfigCtx, c *envoy_config
 	}
 
 	if c.Name != "" {
-		d = bind.DefServiceConfig{
-			Name: c.Name,
-			Def: bind.TagsServiceConfig{
-				Service: d,
-				Tag:     c.Name,
-			},
-		}
+		d = conf.RegisterLDS(c.Name, bind.TagsServiceConfig{
+			Service: d,
+			Tag:     c.Name,
+		}, c)
 	}
 	return d, nil
 }

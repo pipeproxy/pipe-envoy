@@ -75,73 +75,143 @@ func (c *ConfigCtx) SetNodeID(nodeid string) {
 	c.cli.NodeID = nodeid
 }
 
-func (c *ConfigCtx) RegisterCDS(name string, dialer bind.StreamDialer, msg proto.Message) {
+func (c *ConfigCtx) RegisterCDS(name string, dialer bind.StreamDialer, msg proto.Message) bind.StreamDialer {
 	c.mux.Lock()
 	defer c.mux.Unlock()
-	c.cds[name] = dialer
+	name = "cds." + name
+	c.cds[name] = bind.DefStreamDialerConfig{
+		Name: name,
+		Def:  dialer,
+	}
 	c.xds[name] = msg
 	c.update()
+	return bind.RefStreamDialerConfig{
+		Name: name,
+	}
 }
 
-func (c *ConfigCtx) RegisterEDS(name string, dialer bind.StreamDialer, msg proto.Message) {
-	c.mux.Lock()
-	defer c.mux.Unlock()
-	c.eds[name] = dialer
-	c.xds[name] = msg
-	c.update()
+func (c *ConfigCtx) CDS(name string) bind.StreamDialer {
+	name = "cds." + name
+	return bind.RefStreamDialerConfig{
+		Name: name,
+	}
 }
 
-func (c *ConfigCtx) RegisterLDS(name string, service bind.Service, msg proto.Message) {
+func (c *ConfigCtx) RegisterEDS(name string, dialer bind.StreamDialer, msg proto.Message) bind.StreamDialer {
 	c.mux.Lock()
 	defer c.mux.Unlock()
-	c.lds[name] = service
+	name = "eds." + name
+	c.eds[name] = bind.DefStreamDialerConfig{
+		Name: name,
+		Def:  dialer,
+	}
 	c.xds[name] = msg
 	c.update()
+	return bind.RefStreamDialerConfig{
+		Name: name,
+	}
 }
 
-func (c *ConfigCtx) RegisterRDS(name string, handler bind.HTTPHandler, msg proto.Message) {
-	c.mux.Lock()
-	defer c.mux.Unlock()
-	c.rds[name] = handler
-	c.xds[name] = msg
-	c.update()
+func (c *ConfigCtx) EDS(name string) bind.StreamDialer {
+	name = "eds." + name
+	return bind.RefStreamDialerConfig{
+		Name: name,
+	}
 }
 
-func (c *ConfigCtx) RegisterSDS(name string, tls bind.TLS, msg proto.Message) {
+func (c *ConfigCtx) RegisterLDS(name string, service bind.Service, msg proto.Message) bind.Service {
 	c.mux.Lock()
 	defer c.mux.Unlock()
-	c.sds[name] = tls
+	name = "lds." + name
+	c.lds[name] = bind.DefServiceConfig{
+		Name: name,
+		Def:  service,
+	}
 	c.xds[name] = msg
 	c.update()
+	return bind.RefServiceConfig{
+		Name: name,
+	}
+}
+
+func (c *ConfigCtx) LDS(name string) bind.Service {
+	name = "lds." + name
+	return bind.RefServiceConfig{
+		Name: name,
+	}
+}
+
+func (c *ConfigCtx) RegisterRDS(name string, handler bind.HTTPHandler, msg proto.Message) bind.HTTPHandler {
+	c.mux.Lock()
+	defer c.mux.Unlock()
+	name = "rds." + name
+	c.rds[name] = bind.DefNetHTTPHandlerConfig{
+		Name: name,
+		Def:  handler,
+	}
+	c.xds[name] = msg
+	c.update()
+	return bind.RefNetHTTPHandlerConfig{
+		Name: name,
+	}
+}
+
+func (c *ConfigCtx) RDS(name string) bind.HTTPHandler {
+	name = "rds." + name
+	return bind.RefNetHTTPHandlerConfig{
+		Name: name,
+	}
+}
+
+func (c *ConfigCtx) RegisterSDS(name string, tls bind.TLS, msg proto.Message) bind.TLS {
+	c.mux.Lock()
+	defer c.mux.Unlock()
+	name = "sds." + name
+	c.sds[name] = bind.DefTLSConfig{
+		Name: name,
+		Def:  tls,
+	}
+	c.xds[name] = msg
+	c.update()
+	return bind.RefTLSConfig{
+		Name: name,
+	}
+}
+
+func (c *ConfigCtx) SDS(name string) bind.TLS {
+	name = "sds." + name
+	return bind.RefTLSConfig{
+		Name: name,
+	}
 }
 
 func (c *ConfigCtx) save() {
 	c.mux.Lock()
 	defer c.mux.Unlock()
-	componentSortd := []sortd{}
-	serviceSortd := []sortd{}
+	componentSorted := make([]sorted, 0, len(c.cds)+len(c.eds)+len(c.rds)+len(c.sds))
+	serviceSorted := make([]sorted, 0, len(c.lds))
 
 	for name, d := range c.cds {
-		componentSortd = append(componentSortd, sortd{name, d})
+		componentSorted = append(componentSorted, sorted{name, d})
 	}
 	for name, d := range c.eds {
-		componentSortd = append(componentSortd, sortd{name, d})
+		componentSorted = append(componentSorted, sorted{name, d})
 	}
 	for name, d := range c.rds {
-		componentSortd = append(componentSortd, sortd{name, d})
+		componentSorted = append(componentSorted, sorted{name, d})
 	}
 	for name, d := range c.sds {
-		componentSortd = append(componentSortd, sortd{name, d})
+		componentSorted = append(componentSorted, sorted{name, d})
 	}
 	for name, d := range c.lds {
-		serviceSortd = append(serviceSortd, sortd{name, d})
+		serviceSorted = append(serviceSorted, sorted{name, d})
 	}
 
-	components := make([]bind.Component, 0, len(componentSortd))
-	sort.Slice(componentSortd, func(i, j int) bool {
-		return componentSortd[i].Name < componentSortd[j].Name
+	components := make([]bind.Component, 0, len(componentSorted))
+	sort.Slice(componentSorted, func(i, j int) bool {
+		return componentSorted[i].Name < componentSorted[j].Name
 	})
-	for _, com := range componentSortd {
+	for _, com := range componentSorted {
 		f := com.Name + ".yml"
 		c.writeFile(f, com.Component, c.xds[com.Name])
 
@@ -157,11 +227,11 @@ func (c *ConfigCtx) save() {
 		components = append(components, d)
 	}
 
-	services := make([]bind.Service, 0, len(serviceSortd))
-	sort.Slice(serviceSortd, func(i, j int) bool {
-		return serviceSortd[i].Name < serviceSortd[j].Name
+	services := make([]bind.Service, 0, len(serviceSorted))
+	sort.Slice(serviceSorted, func(i, j int) bool {
+		return serviceSorted[i].Name < serviceSorted[j].Name
 	})
-	for _, svc := range serviceSortd {
+	for _, svc := range serviceSorted {
 		f := svc.Name + ".yml"
 		c.writeFile(f, svc.Component, c.xds[svc.Name])
 
@@ -254,7 +324,7 @@ func (c *ConfigCtx) startPipe(ctx context.Context) error {
 	return cmd.Wait()
 }
 
-type sortd struct {
+type sorted struct {
 	Name      string
 	Component bind.Component
 }

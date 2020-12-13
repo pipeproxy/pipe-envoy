@@ -7,8 +7,8 @@ import (
 	"log"
 )
 
-func Convert_config_bootstrap_v3_Bootstrap_StaticResources(conf *config.ConfigCtx, c *envoy_config_bootstrap_v3.Bootstrap_StaticResources) (string, error) {
+func Convert_config_bootstrap_v3_Watchdog_WatchdogAction(conf *config.ConfigCtx, c *envoy_config_bootstrap_v3.Watchdog_WatchdogAction) (string, error) {
 	data, _ := encoding.Marshal(c)
-	log.Printf("[TODO] envoy_config_bootstrap_v3.Bootstrap_StaticResources %s\n", string(data))
+	log.Printf("[TODO] envoy_config_bootstrap_v3.Watchdog_WatchdogAction %s\n", string(data))
 	return "", nil
 }

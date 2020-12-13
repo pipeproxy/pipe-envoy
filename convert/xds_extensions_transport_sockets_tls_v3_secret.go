@@ -36,10 +36,7 @@ func Convert_extensions_transport_sockets_tls_v3_Secret(conf *config.ConfigCtx, 
 		return nil, nil
 	}
 	if c.Name != "" {
-		d = bind.DefTLSConfig{
-			Name: c.Name,
-			Def:  d,
-		}
+		d = conf.RegisterSDS(c.Name, d, c)
 	}
 	return d, nil
 }

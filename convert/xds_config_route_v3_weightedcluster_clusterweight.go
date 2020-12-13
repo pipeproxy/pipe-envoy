@@ -10,10 +10,8 @@ func Convert_config_route_v3_WeightedCluster_ClusterWeight(conf *config.ConfigCt
 	return bind.LbNetHTTPHandlerWeight{
 		Weight: uint(c.Weight.GetValue()),
 		Handler: bind.ForwardNetHTTPHandlerConfig{
-			H2c: true,
-			Dialer: bind.RefStreamDialerConfig{
-				Name: c.Name,
-			},
+			H2c:    true,
+			Dialer: conf.CDS(c.Name),
 		},
 	}, nil
 }

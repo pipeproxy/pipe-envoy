@@ -21,9 +21,7 @@ func Convert_config_endpoint_v3_LbEndpoint(conf *config.ConfigCtx, c *envoy_conf
 			Address: address,
 		}, nil
 	case *envoy_config_endpoint_v3.LbEndpoint_EndpointName:
-		return bind.RefStreamDialerConfig{
-			Name: h.EndpointName,
-		}, nil
+		return conf.EDS(h.EndpointName), nil
 	}
 	data, _ := encoding.Marshal(c)
 	log.Printf("[TODO] envoy_config_endpoint_v3.LbEndpoint %s\n", string(data))

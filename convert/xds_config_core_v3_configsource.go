@@ -15,9 +15,7 @@ func Convert_config_core_v3_ConfigSource(conf *config.ConfigCtx, c *envoy_config
 	case *envoy_config_core_v3.ConfigSource_ApiConfigSource:
 		return Convert_config_core_v3_ApiConfigSource(conf, s.ApiConfigSource)
 	case *envoy_config_core_v3.ConfigSource_Ads:
-		return bind.RefStreamDialerConfig{
-			Name: "ads",
-		}, nil
+		return conf.CDS("ads"), nil
 	case *envoy_config_core_v3.ConfigSource_Self:
 	}
 

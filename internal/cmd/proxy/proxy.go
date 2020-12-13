@@ -142,73 +142,67 @@ var (
 			cc := config.NewConfigCtx(ctx, ads, tmp, time.Second/2)
 
 			ads.HandleCDS = func(clusters map[string]*envoy_config_cluster_v3.Cluster) {
-				for name, cluster := range clusters {
-					d, err := convert.Convert_config_cluster_v3_Cluster(cc, cluster)
+				for _, cluster := range clusters {
+					_, err := convert.Convert_config_cluster_v3_Cluster(cc, cluster)
 					if err != nil {
 						log.Println(err)
 						continue
 					}
-					cc.RegisterCDS("cds."+name, d, cluster)
 				}
 			}
 			ads.HandleEDSCDS = func(clusters map[string]*envoy_config_cluster_v3.Cluster) {
-				for name, cluster := range clusters {
-					d, err := convert.Convert_config_cluster_v3_Cluster(cc, cluster)
+				for _, cluster := range clusters {
+					_, err := convert.Convert_config_cluster_v3_Cluster(cc, cluster)
 					if err != nil {
 						log.Println(err)
 						continue
 					}
-					cc.RegisterCDS("cds.eds."+name, d, cluster)
+
 				}
 			}
 			ads.HandleEDS = func(endpoints map[string]*envoy_config_endpoint_v3.ClusterLoadAssignment) {
-				for name, endpoint := range endpoints {
-					d, err := convert.Convert_config_endpoint_v3_ClusterLoadAssignment(cc, endpoint)
+				for _, endpoint := range endpoints {
+					_, err := convert.Convert_config_endpoint_v3_ClusterLoadAssignment(cc, endpoint)
 					if err != nil {
 						log.Println(err)
 						continue
 					}
-					cc.RegisterEDS("eds."+name, d, endpoint)
 				}
 			}
 			ads.HandleTcpLDS = func(listeners map[string]*envoy_config_listener_v3.Listener) {
-				for name, listener := range listeners {
-					d, err := convert.Convert_config_listener_v3_Listener(cc, listener)
+				for _, listener := range listeners {
+					_, err := convert.Convert_config_listener_v3_Listener(cc, listener)
 					if err != nil {
 						log.Println(err)
 						continue
 					}
-					cc.RegisterLDS("lds.tcp."+name, d, listener)
 				}
 			}
 			ads.HandleHttpLDS = func(listeners map[string]*envoy_config_listener_v3.Listener) {
-				for name, listener := range listeners {
-					d, err := convert.Convert_config_listener_v3_Listener(cc, listener)
+				for _, listener := range listeners {
+					_, err := convert.Convert_config_listener_v3_Listener(cc, listener)
 					if err != nil {
 						log.Println(err)
 						continue
 					}
-					cc.RegisterLDS("lds.http."+name, d, listener)
 				}
 			}
 			ads.HandleRDS = func(routes map[string]*envoy_config_route_v3.RouteConfiguration) {
-				for name, route := range routes {
-					d, err := convert.Convert_config_route_v3_RouteConfiguration(cc, route)
+				for _, route := range routes {
+					_, err := convert.Convert_config_route_v3_RouteConfiguration(cc, route)
 					if err != nil {
 						log.Println(err)
 						continue
 					}
-					cc.RegisterRDS("rds.http."+name, d, route)
 				}
 			}
 			ads.HandleSDS = func(secrets map[string]*envoy_extensions_transport_sockets_tls_v3.Secret) {
-				for name, secret := range secrets {
-					d, err := convert.Convert_extensions_transport_sockets_tls_v3_Secret(cc, secret)
+				for _, secret := range secrets {
+					_, err := convert.Convert_extensions_transport_sockets_tls_v3_Secret(cc, secret)
 					if err != nil {
 						log.Println(err)
 						continue
 					}
-					cc.RegisterSDS("sds."+name, d, secret)
 				}
 			}
 

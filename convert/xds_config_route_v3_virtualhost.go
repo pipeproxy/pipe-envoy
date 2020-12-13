@@ -20,51 +20,33 @@ func Convert_config_route_v3_VirtualHost(conf *config.ConfigCtx, name string, c 
 		}
 		name := fmt.Sprintf("%s|%s|%s|%d", name, c.Name, route.Name, index)
 		routeName := name + ".route"
-		conf.RegisterRDS("rds.http."+routeName, bind.DefNetHTTPHandlerConfig{
-			Name: routeName,
-			Def:  handler,
-		}, nil)
-		handler = bind.RefNetHTTPHandlerConfig{
-			Name: routeName,
-		}
+		handler = conf.RegisterRDS("http."+routeName, handler, nil)
 
 		query := Convert_config_route_v3_RouteMatch_Query(conf, route.Match)
 		if query != nil {
 			routeName = name + ".match.query"
-			conf.RegisterRDS("rds.http."+routeName, bind.DefNetHTTPHandlerConfig{
-				Name: routeName,
-				Def: bind.QueryNetHTTPHandlerConfig{
-					Queries: []bind.QueryNetHTTPHandlerRoute{
-						{
-							Matches: query,
-							Handler: handler,
-						},
+			handler = conf.RegisterRDS("http."+routeName, bind.QueryNetHTTPHandlerConfig{
+				Queries: []bind.QueryNetHTTPHandlerRoute{
+					{
+						Matches: query,
+						Handler: handler,
 					},
-					NotFound: h,
 				},
+				NotFound: h,
 			}, nil)
-			handler = bind.RefNetHTTPHandlerConfig{
-				Name: routeName,
-			}
 		}
 		header := Convert_config_route_v3_RouteMatch_Header(conf, route.Match)
 		if header != nil {
 			routeName = name + ".match.header"
-			conf.RegisterRDS("rds.http."+routeName, bind.DefNetHTTPHandlerConfig{
-				Name: routeName,
-				Def: bind.HeaderNetHTTPHandlerConfig{
-					Headers: []bind.HeaderNetHTTPHandlerRoute{
-						{
-							Matches: header,
-							Handler: handler,
-						},
+			handler = conf.RegisterRDS("http."+routeName, bind.HeaderNetHTTPHandlerConfig{
+				Headers: []bind.HeaderNetHTTPHandlerRoute{
+					{
+						Matches: header,
+						Handler: handler,
 					},
-					NotFound: h,
 				},
+				NotFound: h,
 			}, nil)
-			handler = bind.RefNetHTTPHandlerConfig{
-				Name: routeName,
-			}
 		}
 
 		routeName = name + ".match.path"
@@ -75,13 +57,7 @@ func Convert_config_route_v3_VirtualHost(conf *config.ConfigCtx, name string, c 
 			},
 			NotFound: h,
 		}
-		conf.RegisterRDS("rds.http."+routeName, bind.DefNetHTTPHandlerConfig{
-			Name: routeName,
-			Def:  paths,
-		}, nil)
-		handler = bind.RefNetHTTPHandlerConfig{
-			Name: routeName,
-		}
+		handler = conf.RegisterRDS("http."+routeName, paths, nil)
 		h = handler
 	}
 
@@ -139,11 +115,8 @@ func Convert_config_route_v3_VirtualHost(conf *config.ConfigCtx, name string, c 
 		}
 	}
 
-	//if c.Name != "" {
-	//	d = bind.DefNetHTTPHandlerConfig{
-	//		Name: c.Name,
-	//		Def:  d,
-	//	}
-	//}
+	if c.Name != "" {
+		d = conf.RegisterRDS("host."+c.Name, d, c)
+	}
 	return d, nil
 }

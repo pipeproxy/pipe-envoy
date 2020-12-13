@@ -7,8 +7,6 @@ import (
 )
 
 func Convert_extensions_transport_sockets_tls_v3_SdsSecretConfig(conf *config.ConfigCtx, c *envoy_extensions_transport_sockets_tls_v3.SdsSecretConfig) (bind.TLS, error) {
-	d := bind.RefTLSConfig{
-		Name: c.Name,
-	}
+	d := conf.SDS(c.Name)
 	return d, nil
 }
