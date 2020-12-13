@@ -13,6 +13,7 @@ func Convert_config_route_v3_RouteAction(conf *config.ConfigCtx, c *envoy_config
 	switch s := c.ClusterSpecifier.(type) {
 	case *envoy_config_route_v3.RouteAction_Cluster:
 		return bind.ForwardNetHTTPHandlerConfig{
+			H2c: true,
 			Dialer: bind.RefStreamDialerConfig{
 				Name: s.Cluster,
 			},

@@ -37,17 +37,9 @@ func Convert_extensions_filters_network_http_connection_manager_v3_HttpConnectio
 		},
 	}
 
-	var d bind.StreamHandler
-	if tls == nil {
-		d = bind.HTTP1StreamHandlerConfig{
-			Handler: route,
-		}
-	} else {
-		d = bind.HTTP2StreamHandlerConfig{
-			Handler: route,
-			TLS:     tls,
-		}
+	var d = bind.HTTP2StreamHandlerConfig{
+		Handler: route,
+		TLS:     tls,
 	}
-
 	return d, nil
 }

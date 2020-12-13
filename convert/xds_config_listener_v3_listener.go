@@ -2,6 +2,7 @@ package convert
 
 import (
 	"reflect"
+	"sort"
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/pipeproxy/pipe-xds/config"
@@ -69,33 +70,27 @@ var (
 )
 
 func SelectFilterChain(conf *config.ConfigCtx, fc []*envoy_config_listener_v3.FilterChain) (bind.StreamHandler, error) {
-	if len(fc) == 1 {
-		return Convert_config_listener_v3_FilterChain(conf, fc[0])
-	}
-	var tcpStream bind.StreamHandler
-	var httpStream bind.StreamHandler
-	var tcpTlsStream bind.StreamHandler
-	var httpTlsStream bind.StreamHandler
+	ports := map[uint32]*prefixMux{}
+	ports[0] = &prefixMux{}
 	for _, filter := range fc {
 		if filter.FilterChainMatch == nil {
 			h, err := Convert_config_listener_v3_FilterChain(conf, filter)
 			if err != nil {
 				return nil, err
 			}
-			tcpStream = h
+			ports[0].tcp.tcpStream = h
 			continue
 		}
-		if filter.FilterChainMatch.DestinationPort.GetValue() != 0 {
-			continue
+		port := filter.FilterChainMatch.DestinationPort.GetValue()
+		if ports[port] == nil {
+			ports[port] = &prefixMux{}
 		}
 		if filter.FilterChainMatch.ApplicationProtocols == nil {
-			if filter.FilterChainMatch.TransportProtocol == "raw_buffer" {
-				h, err := Convert_config_listener_v3_FilterChain(conf, filter)
-				if err != nil {
-					return nil, err
-				}
-				tcpStream = h
+			h, err := Convert_config_listener_v3_FilterChain(conf, filter)
+			if err != nil {
+				return nil, err
 			}
+			ports[port].tcp.tcpStream = h
 			continue
 		}
 		switch len(filter.FilterChainMatch.ApplicationProtocols) {
@@ -105,7 +100,7 @@ func SelectFilterChain(conf *config.ConfigCtx, fc []*envoy_config_listener_v3.Fi
 				if err != nil {
 					return nil, err
 				}
-				httpStream = h
+				ports[port].tcp.httpStream = h
 			}
 		case len(httpTLS):
 			if reflect.DeepEqual(httpTLS, filter.FilterChainMatch.ApplicationProtocols) {
@@ -113,7 +108,7 @@ func SelectFilterChain(conf *config.ConfigCtx, fc []*envoy_config_listener_v3.Fi
 				if err != nil {
 					return nil, err
 				}
-				httpTlsStream = h
+				ports[port].tls.httpStream = h
 			}
 		case len(tcpTLS):
 			if reflect.DeepEqual(httpTLS, filter.FilterChainMatch.ApplicationProtocols) {
@@ -121,90 +116,99 @@ func SelectFilterChain(conf *config.ConfigCtx, fc []*envoy_config_listener_v3.Fi
 				if err != nil {
 					return nil, err
 				}
-				tcpTlsStream = h
+				ports[port].tls.tcpStream = h
 			}
 		}
 	}
+	m := bind.DestinationStreamHandlerConfig{
+		NotFound: ports[0].Handler(),
+	}
+	ks := []int{}
+	for k := range ports {
+		if k == 0 {
+			continue
+		}
+		ks = append(ks, int(k))
+	}
+	if len(ks) != 0 {
+		sort.Ints(ks)
+		for _, k := range ks {
+			port := ports[uint32(k)]
+			h := port.Handler()
+			if h == nil {
+				continue
+			}
+			m.Destinations = append(m.Destinations, bind.DestinationStreamHandlerRoute{
+				Ports:   []uint32{uint32(k)},
+				Handler: h,
+			})
+		}
+	}
+	if len(m.Destinations) == 0 {
+		return m.NotFound, nil
+	}
+	return m, nil
+}
 
+type prefixMux struct {
+	tcp prefixMuxProto
+	tls prefixMuxProto
+}
+
+func (p *prefixMux) Handler() bind.StreamHandler {
+	n := p.tcp.Handler()
+	t := p.tls.Handler()
+	if t == nil {
+		return n
+	}
+	s, ok := n.(bind.PrefixStreamHandlerConfig)
+	if ok {
+		s.Routes = append(s.Routes, bind.PrefixStreamHandlerRoute{
+			Pattern: bind.PrefixStreamHandlerProtocolEnumProtocolTLS,
+			Handler: t,
+		})
+		return s
+	}
+	return bind.PrefixStreamHandlerConfig{
+		Routes: []bind.PrefixStreamHandlerRoute{
+			{
+				Pattern: bind.PrefixStreamHandlerProtocolEnumProtocolTLS,
+				Handler: t,
+			},
+		},
+		NotFound: n,
+	}
+}
+
+type prefixMuxProto struct {
+	tcpStream  bind.StreamHandler
+	httpStream bind.StreamHandler
+}
+
+func (p *prefixMuxProto) Handler() bind.StreamHandler {
 	var lastStream bind.StreamHandler
-	isHttp := httpStream != nil
-	isTcp := tcpStream != nil
-	isTlsTcp := tcpTlsStream != nil
-	isTlsHttp := httpTlsStream != nil
-	isTls := isTlsTcp || isTlsHttp
-
-	var tlsStream bind.StreamHandler
-	if isTls {
-		switch {
-		case isTlsHttp && isTlsTcp:
-			tlsStream = bind.MuxStreamHandlerConfig{
-				Routes: []bind.MuxStreamHandlerRoute{
-					{
-						Pattern: "http",
-						Handler: httpTlsStream,
-					},
-				},
-				NotFound: tcpTlsStream,
-			}
-		case isTlsHttp && !isTlsTcp:
-			tlsStream = httpTlsStream
-		case isTlsTcp && !isTlsHttp:
-			tlsStream = tcpTlsStream
-		}
-	}
+	isHttp := p.httpStream != nil
+	isTcp := p.tcpStream != nil
 
 	switch {
-	case isHttp && isTcp && isTls:
-		lastStream = bind.MuxStreamHandlerConfig{
-			Routes: []bind.MuxStreamHandlerRoute{
+	case isHttp && isTcp:
+		lastStream = bind.PrefixStreamHandlerConfig{
+			Routes: []bind.PrefixStreamHandlerRoute{
 				{
-					Pattern: "http",
-					Handler: httpStream,
+					Pattern: bind.PrefixStreamHandlerProtocolEnumProtocolHTTP1,
+					Handler: p.httpStream,
 				},
 				{
-					Pattern: "tls",
-					Handler: tlsStream,
-				},
-			},
-			NotFound: tcpStream,
-		}
-	case isHttp && !isTcp && isTls:
-		lastStream = bind.MuxStreamHandlerConfig{
-			Routes: []bind.MuxStreamHandlerRoute{
-				{
-					Pattern: "http",
-					Handler: httpStream,
-				},
-				{
-					Pattern: "tls",
-					Handler: tlsStream,
+					Pattern: bind.PrefixStreamHandlerProtocolEnumProtocolHTTP2,
+					Handler: p.httpStream,
 				},
 			},
+			NotFound: p.tcpStream,
 		}
-	case isTcp && !isHttp && isTls:
-		lastStream = bind.MuxStreamHandlerConfig{
-			Routes: []bind.MuxStreamHandlerRoute{
-				{
-					Pattern: "tls",
-					Handler: tlsStream,
-				},
-			},
-			NotFound: tcpStream,
-		}
-	case isHttp && isTcp && !isTls:
-		lastStream = bind.MuxStreamHandlerConfig{
-			Routes: []bind.MuxStreamHandlerRoute{
-				{
-					Pattern: "http",
-					Handler: httpStream,
-				},
-			},
-			NotFound: tcpStream,
-		}
-	case isHttp && !isTcp && !isTls:
-		lastStream = httpStream
-	case isTcp && !isHttp && !isTls:
-		lastStream = tcpStream
+	case isHttp && !isTcp:
+		lastStream = p.httpStream
+	case isTcp && !isHttp:
+		lastStream = p.tcpStream
 	}
-	return lastStream, nil
+	return lastStream
 }
