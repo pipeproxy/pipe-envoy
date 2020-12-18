@@ -64,9 +64,10 @@ package convert
 
 import (
 	"log"
+
 	%s %q
-	"github.com/pipeproxy/pipe-xds/config"
-	"github.com/pipeproxy/pipe-xds/encoding"
+	"github.com/pipeproxy/pipe-xds/internal/config"
+	"github.com/pipeproxy/pipe-xds/internal/encoding"
 )
 
 func Convert_%s_%s(conf *config.ConfigCtx, c *%s.%s) (string, error) {
