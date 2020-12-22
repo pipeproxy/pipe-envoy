@@ -12,7 +12,7 @@ As far as possible compatible with xDS data plane.
 ## Install
 
 ``` shell
-wget -O pipe-xds-manifests.yaml https://github.com/pipeproxy/pipe-xds/raw/master/manifests/profiles/default.yaml && istioctl manifest generate -f pipe-xds-manifests.yaml | kubectl apply -f -
+istioctl install --set "values.global.proxy.image=pipeproxy/pipe-xds:v0.2.10" --set "values.global.proxy_init.image=pipeproxy/pipe-xds:v0.2.10"
 ```
 
 ## License
