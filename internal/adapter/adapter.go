@@ -127,7 +127,7 @@ func (a *Adapter) init(ctx context.Context) error {
 	}
 	a.ads.HandleEDS = func(endpoints map[string]*envoy_config_endpoint_v3.ClusterLoadAssignment) {
 		for _, endpoint := range endpoints {
-			_, err := convert.Convert_config_endpoint_v3_ClusterLoadAssignment(a.conf, endpoint)
+			_, err := convert.Convert_config_endpoint_v3_ClusterLoadAssignment(a.conf, endpoint, false)
 			if err != nil {
 				log.Error(err, "eds")
 				continue

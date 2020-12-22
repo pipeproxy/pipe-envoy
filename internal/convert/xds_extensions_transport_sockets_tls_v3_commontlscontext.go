@@ -53,6 +53,9 @@ func Convert_extensions_transport_sockets_tls_v3_CommonTlsContext(conf *config.C
 		log.Printf("[TODO] envoy_extensions_transport_sockets_tls_v3.CommonTlsContext %s\n", string(data))
 	}
 
+	if len(merge) == 0 {
+		return nil, nil
+	}
 	d := bind.MergeTLSConfig{
 		Merge: merge,
 	}

@@ -22,6 +22,9 @@ func Convert_extensions_transport_sockets_tls_v3_CommonTlsContext_CombinedCertif
 	if tls != nil {
 		merge = append(merge, tls)
 	}
+	if len(merge) == 0 {
+		return nil, nil
+	}
 	d := bind.MergeTLSConfig{
 		Merge: merge,
 	}

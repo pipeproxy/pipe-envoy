@@ -38,9 +38,6 @@ type SDSClient struct {
 	url       string
 	isClose   bool
 
-	// Last received message, by type
-	received map[string]*cache
-
 	SDSConfig
 }
 
@@ -49,7 +46,6 @@ func NewSDSClient(url string, tlsConfig *tls.Config, opts *SDSConfig) *SDSClient
 	ads := &SDSClient{
 		tlsConfig: tlsConfig,
 		url:       url,
-		received:  map[string]*cache{},
 	}
 	if opts != nil {
 		ads.SDSConfig = *opts
@@ -167,7 +163,6 @@ func (c *SDSClient) handleRecv() error {
 		if len(others) != 0 && c.HandleNotFound != nil {
 			c.HandleNotFound(c, others)
 		}
-		c.ack(msg)
 	}
 }
 
@@ -181,37 +176,8 @@ func (c *SDSClient) Send(req *envoy_service_discovery_v3.DiscoveryRequest) error
 }
 
 func (c *SDSClient) SendRsc(typeURL string, rsc []string) error {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-
-	if c.received[typeURL] == nil {
-		c.received[typeURL] = &cache{}
-	}
-	c.received[typeURL].Names = rsc
-	version := c.received[typeURL].VersionInfo
-	nonce := c.received[typeURL].Nonce
 	return c.Send(&envoy_service_discovery_v3.DiscoveryRequest{
-		ResponseNonce: nonce,
 		TypeUrl:       typeURL,
-		VersionInfo:   version,
-		ResourceNames: rsc,
-	})
-}
-
-func (c *SDSClient) ack(msg *envoy_service_discovery_v3.DiscoveryResponse) error {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-
-	if c.received[msg.TypeUrl] == nil {
-		c.received[msg.TypeUrl] = &cache{}
-	}
-	c.received[msg.TypeUrl].VersionInfo = msg.VersionInfo
-	c.received[msg.TypeUrl].Nonce = msg.Nonce
-	rsc := c.received[msg.TypeUrl].Names
-	return c.Send(&envoy_service_discovery_v3.DiscoveryRequest{
-		ResponseNonce: msg.Nonce,
-		TypeUrl:       msg.TypeUrl,
-		VersionInfo:   msg.VersionInfo,
 		ResourceNames: rsc,
 	})
 }

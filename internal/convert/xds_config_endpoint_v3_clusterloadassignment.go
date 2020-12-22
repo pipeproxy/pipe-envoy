@@ -6,7 +6,7 @@ import (
 	"github.com/pipeproxy/pipe/bind"
 )
 
-func Convert_config_endpoint_v3_ClusterLoadAssignment(conf *config.ConfigCtx, c *envoy_config_endpoint_v3.ClusterLoadAssignment) (bind.StreamDialer, error) {
+func Convert_config_endpoint_v3_ClusterLoadAssignment(conf *config.ConfigCtx, c *envoy_config_endpoint_v3.ClusterLoadAssignment, direct bool) (bind.StreamDialer, error) {
 	dialers := []bind.LbStreamDialerWeight{}
 	for _, endpoint := range c.Endpoints {
 		dialer, err := Convert_config_endpoint_v3_LocalityLbEndpoints(conf, endpoint)
@@ -33,8 +33,10 @@ func Convert_config_endpoint_v3_ClusterLoadAssignment(conf *config.ConfigCtx, c 
 		}
 	}
 
-	if c.ClusterName != "" {
-		d = conf.RegisterEDS(c.ClusterName, d, c)
+	if !direct {
+		if c.ClusterName != "" {
+			d = conf.RegisterEDS(c.ClusterName, d, c)
+		}
 	}
 	return d, nil
 }

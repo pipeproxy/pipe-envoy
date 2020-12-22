@@ -22,7 +22,7 @@ func Convert_config_cluster_v3_Cluster(conf *config.ConfigCtx, c *envoy_config_c
 	var d bind.StreamDialer
 	switch {
 	case c.LoadAssignment != nil:
-		dialer, err := Convert_config_endpoint_v3_ClusterLoadAssignment(conf, c.LoadAssignment)
+		dialer, err := Convert_config_endpoint_v3_ClusterLoadAssignment(conf, c.LoadAssignment, true)
 		if err != nil {
 			return nil, err
 		}

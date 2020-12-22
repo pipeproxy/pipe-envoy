@@ -3,7 +3,6 @@ package config
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -61,15 +60,6 @@ func (c *ConfigCtx) RegisterCDS(name string, dialer bind.StreamDialer, msg proto
 	c.mux.Lock()
 	defer c.mux.Unlock()
 	name = "cds." + name
-	i := 1
-	for n := name; ; i++ {
-		_, ok := c.cds[n]
-		if !ok {
-			name = n
-			break
-		}
-		n = fmt.Sprintf("%s.%d", name, i)
-	}
 	c.cds[name] = bind.DefStreamDialerConfig{
 		Name: name,
 		Def:  dialer,
@@ -92,15 +82,6 @@ func (c *ConfigCtx) RegisterEDS(name string, dialer bind.StreamDialer, msg proto
 	c.mux.Lock()
 	defer c.mux.Unlock()
 	name = "eds." + name
-	i := 1
-	for n := name; ; i++ {
-		_, ok := c.eds[n]
-		if !ok {
-			name = n
-			break
-		}
-		n = fmt.Sprintf("%s.%d", name, i)
-	}
 	c.eds[name] = bind.DefStreamDialerConfig{
 		Name: name,
 		Def:  dialer,
@@ -123,15 +104,6 @@ func (c *ConfigCtx) RegisterLDS(name string, service bind.Service, msg proto.Mes
 	c.mux.Lock()
 	defer c.mux.Unlock()
 	name = "lds." + name
-	i := 1
-	for n := name; ; i++ {
-		_, ok := c.lds[n]
-		if !ok {
-			name = n
-			break
-		}
-		n = fmt.Sprintf("%s.%d", name, i)
-	}
 	c.lds[name] = bind.DefServiceConfig{
 		Name: name,
 		Def:  service,
@@ -154,15 +126,6 @@ func (c *ConfigCtx) RegisterRDS(name string, handler bind.HTTPHandler, msg proto
 	c.mux.Lock()
 	defer c.mux.Unlock()
 	name = "rds." + name
-	i := 1
-	for n := name; ; i++ {
-		_, ok := c.rds[n]
-		if !ok {
-			name = n
-			break
-		}
-		n = fmt.Sprintf("%s.%d", name, i)
-	}
 	c.rds[name] = bind.DefNetHTTPHandlerConfig{
 		Name: name,
 		Def:  handler,
@@ -185,15 +148,6 @@ func (c *ConfigCtx) RegisterSDS(name string, tls bind.TLS, msg proto.Message) bi
 	c.mux.Lock()
 	defer c.mux.Unlock()
 	name = "sds." + name
-	i := 1
-	for n := name; ; i++ {
-		_, ok := c.sds[n]
-		if !ok {
-			name = n
-			break
-		}
-		n = fmt.Sprintf("%s.%d", name, i)
-	}
 	c.sds[name] = bind.DefTLSConfig{
 		Name: name,
 		Def:  tls,

@@ -8,7 +8,6 @@ import (
 )
 
 func Convert_config_listener_v3_FilterChain(conf *config.ConfigCtx, c *envoy_config_listener_v3.FilterChain) (bind.StreamHandler, error) {
-
 	var tls bind.TLS
 	if c.TransportSocket != nil {
 		t, err := Convert_config_core_v3_TransportSocket(conf, c.TransportSocket)
