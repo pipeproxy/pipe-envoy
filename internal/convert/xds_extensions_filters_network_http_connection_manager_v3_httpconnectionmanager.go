@@ -30,11 +30,12 @@ func Convert_extensions_filters_network_http_connection_manager_v3_HttpConnectio
 		return nil, nil
 	}
 
-	route = bind.LogNetHTTPHandlerConfig{
-		Handler: route,
-		Output: bind.FileIoWriterConfig{
-			Path: "/dev/stderr",
-		},
+	var err error
+	for _, l := range c.AccessLog {
+		route, err = Convert_config_accesslog_v3_AccessLog_HTTPHandler(conf, l, route)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var d = bind.HTTP2StreamHandlerConfig{

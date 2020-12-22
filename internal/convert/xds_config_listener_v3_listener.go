@@ -26,11 +26,11 @@ func Convert_config_listener_v3_Listener(conf *config.ConfigCtx, c *envoy_config
 		return nil, err
 	}
 
-	s = bind.LogStreamHandlerConfig{
-		Handler: s,
-		Output: bind.FileIoWriterConfig{
-			Path: "/dev/stderr",
-		},
+	for _, l := range c.AccessLog {
+		s, err = Convert_config_accesslog_v3_AccessLog_StreamHandler(conf, l, s)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var d bind.Service

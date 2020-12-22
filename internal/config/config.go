@@ -12,12 +12,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/wzshiming/logger"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/pipeproxy/pipe-xds/internal/encoding"
 	"github.com/pipeproxy/pipe-xds/internal/proxy"
 	"github.com/pipeproxy/pipe/bind"
+	"github.com/wzshiming/logger"
 	"sigs.k8s.io/yaml"
 )
 

@@ -20,7 +20,7 @@ import (
 	"github.com/pipeproxy/pipe-xds/internal/proxy"
 	"github.com/wzshiming/lockfile"
 	"github.com/wzshiming/logger"
-	meshconfig "istio.io/api/mesh/v1alpha1"
+	// meshconfig "istio.io/api/mesh/v1alpha1"
 )
 
 const (
@@ -53,12 +53,12 @@ type Config struct {
 }
 
 type Adapter struct {
-	ads        *adsc.ADSC
-	conf       *config.ConfigCtx
-	config     *Config
-	meshConfig *meshconfig.MeshConfig
-	pid        lockfile.Lockfile
-	ready      uint32
+	ads    *adsc.ADSC
+	conf   *config.ConfigCtx
+	config *Config
+	// meshConfig *meshconfig.MeshConfig
+	pid   lockfile.Lockfile
+	ready uint32
 }
 
 func NewAdapter(c *Config) (*Adapter, error) {
