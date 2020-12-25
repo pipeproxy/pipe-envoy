@@ -18,12 +18,12 @@ func Convert_extensions_transport_sockets_tls_v3_Secret(conf *config.ConfigCtx, 
 			return nil, err
 		}
 		d = tls
-	//case *envoy_extensions_transport_sockets_tls_v3.Secret_SessionTicketKeys:
-	//	tls, err := Convert_extensions_transport_sockets_tls_v3_TlsSessionTicketKeys(conf, t.SessionTicketKeys)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	d = tls
+	case *envoy_extensions_transport_sockets_tls_v3.Secret_SessionTicketKeys:
+		tls, err := Convert_extensions_transport_sockets_tls_v3_TlsSessionTicketKeys(conf, t.SessionTicketKeys)
+		if err != nil {
+			return nil, err
+		}
+		d = tls
 	case *envoy_extensions_transport_sockets_tls_v3.Secret_ValidationContext:
 		tls, err := Convert_extensions_transport_sockets_tls_v3_CertificateValidationContext(conf, t.ValidationContext)
 		if err != nil {

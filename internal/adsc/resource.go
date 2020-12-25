@@ -68,7 +68,15 @@ func Convert_extensions_transport_sockets_tls_v3_CommonTlsContext(c *envoy_exten
 
 	switch t := c.ValidationContextType.(type) {
 	case *envoy_extensions_transport_sockets_tls_v3.CommonTlsContext_ValidationContextSdsSecretConfig:
-		out = append(out, t.ValidationContextSdsSecretConfig.Name)
+		name := t.ValidationContextSdsSecretConfig.Name
+		if name != "" {
+			out = append(out, name)
+		}
+	//case *envoy_extensions_transport_sockets_tls_v3.CommonTlsContext_CombinedValidationContext:
+	//	name := t.CombinedValidationContext.ValidationContextSdsSecretConfig.Name
+	//	if name != "" {
+	//		out = append(out, name)
+	//	}
 	default:
 	}
 	return out

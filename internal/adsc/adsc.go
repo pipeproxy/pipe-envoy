@@ -71,26 +71,15 @@ func NewADSC(xdsAddress, sdsAddress string, node *envoy_config_core_v3.Node) *AD
 	}
 
 	a.XDSClient = NewXDSClient(xdsAddress, nil, a.xdsConfig())
-	a.SDSClient = NewSDSClient(sdsAddress, nil, a.sdsConfig())
+	if sdsAddress != "" {
+		a.SDSClient = NewSDSClient(sdsAddress, nil, a.sdsConfig())
+	}
 	return a
 }
 
-func (a *ADSC) Start(ctx context.Context) error {
+func (a *ADSC) Run(ctx context.Context) error {
 	a.ctx = ctx
 	log := logger.FromContext(ctx)
-	if a.XDSClient != nil {
-		go func() {
-			log := log.WithName("xds")
-			ctx = logger.WithContext(ctx, log)
-			for ctx.Err() == nil {
-				err := a.XDSClient.Run(ctx)
-				if err != nil {
-					log.Error(err, "run xds")
-				}
-				time.Sleep(time.Second)
-			}
-		}()
-	}
 	if a.SDSClient != nil {
 		go func() {
 			log := log.WithName("sds")
@@ -103,6 +92,16 @@ func (a *ADSC) Start(ctx context.Context) error {
 				time.Sleep(time.Second)
 			}
 		}()
+	}
+
+	log = log.WithName("xds")
+	ctx = logger.WithContext(ctx, log)
+	for ctx.Err() == nil {
+		err := a.XDSClient.Run(ctx)
+		if err != nil {
+			log.Error(err, "run xds")
+		}
+		time.Sleep(time.Second)
 	}
 	return nil
 }

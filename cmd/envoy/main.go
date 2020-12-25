@@ -6,8 +6,8 @@ import (
 	"syscall"
 
 	_ "github.com/cncf/udpa/go/udpa/type/v1"
-	"github.com/pipeproxy/pipe-xds/internal/adapter"
 	_ "github.com/pipeproxy/pipe-xds/internal/convert"
+	"github.com/pipeproxy/pipe-xds/internal/proxy/adapter"
 	"github.com/spf13/pflag"
 	"github.com/wzshiming/logger"
 	"github.com/wzshiming/logger/zap"
@@ -23,13 +23,6 @@ var (
 func init() {
 	pflag.CommandLine.Init(os.Args[0], pflag.ContinueOnError)
 	pflag.StringVarP(&conf.ConfigFile, "config", "c", "etc/istio/proxy/envoy-rev0.json", "Path to configuration file")
-	pflag.Uint32Var(&conf.RestartEpoch, "restart-epoch", 0, "Hot restart epoch")
-	pflag.Uint32Var(&conf.DrainTimeS, "drain-time-s", 0, "Hot restart and LDS removal drain time in seconds")
-	pflag.Uint32Var(&conf.ParentShutdownTimeS, "parent-shutdown-time-s", 0, "Hot restart parent shutdown time in seconds")
-	pflag.StringVar(&conf.ServiceCluster, "service-cluster", "", "Cluster name")
-	pflag.StringVar(&conf.ServiceNone, "service-node", "", "None name")
-	pflag.StringVar(&conf.LocalAddressIPVersion, "local-address-ip-version", "", "The local IP address version (v4 or v6).")
-	pflag.StringVar(&conf.BootstrapVersion, "bootstrap-version", "", "API version to parse the bootstrap config as (e.g. 3). If unset, all known versions will be attempted")
 
 	pflag.StringVar(&conf.BasePath, "base-path", "etc/istio/proxy/pipe", "Path to pipe configuration dir")
 	pflag.Parse()
@@ -46,12 +39,11 @@ func main() {
 		log.Error(err, "new adapter")
 		return
 	}
-	log.Info("start")
 
-	err = adap.Start(ctx)
+	log.Info("start")
+	err = adap.Run(ctx)
 	if err != nil {
 		log.Error(err, "start adapter")
 		return
 	}
-	<-ctx.Done()
 }

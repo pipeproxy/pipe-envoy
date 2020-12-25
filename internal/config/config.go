@@ -13,14 +13,13 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pipeproxy/pipe-xds/internal/encoding"
-	"github.com/pipeproxy/pipe-xds/internal/proxy"
+	"github.com/pipeproxy/pipe-xds/internal/pipe"
 	"github.com/pipeproxy/pipe/bind"
 	"github.com/wzshiming/logger"
 	"sigs.k8s.io/yaml"
 )
 
 type ConfigCtx struct {
-	ctx      context.Context
 	basePath string
 	cds      map[string]bind.StreamDialer
 	eds      map[string]bind.StreamDialer
@@ -33,10 +32,9 @@ type ConfigCtx struct {
 	mux      sync.Mutex
 }
 
-func NewConfigCtx(ctx context.Context, basePath string, interval time.Duration) *ConfigCtx {
+func NewConfigCtx(basePath string, interval time.Duration) *ConfigCtx {
 	os.MkdirAll(basePath, 0755)
 	return &ConfigCtx{
-		ctx:      ctx,
 		basePath: basePath,
 		cds:      map[string]bind.StreamDialer{},
 		eds:      map[string]bind.StreamDialer{},
@@ -166,7 +164,7 @@ func (c *ConfigCtx) SDS(name string) bind.TLS {
 	}
 }
 
-func (c *ConfigCtx) Save() {
+func (c *ConfigCtx) Save(ctx context.Context) {
 	c.mux.Lock()
 	defer c.mux.Unlock()
 	componentSorted := make([]sorted, 0, len(c.cds)+len(c.eds)+len(c.rds)+len(c.sds))
@@ -194,7 +192,7 @@ func (c *ConfigCtx) Save() {
 	})
 	for _, com := range componentSorted {
 		f := com.Name + ".yml"
-		c.writeFile(f, com.Component, c.xds[com.Name])
+		c.writeFile(ctx, f, com.Component, c.xds[com.Name])
 
 		var d bind.Component
 		switch com.Component.(type) {
@@ -214,7 +212,7 @@ func (c *ConfigCtx) Save() {
 	})
 	for _, svc := range serviceSorted {
 		f := svc.Name + ".yml"
-		c.writeFile(f, svc.Component, c.xds[svc.Name])
+		c.writeFile(ctx, f, svc.Component, c.xds[svc.Name])
 
 		if reflect.DeepEqual(svc.Component, bind.NoneService{}) {
 			continue
@@ -252,7 +250,7 @@ func (c *ConfigCtx) Save() {
 		},
 	}
 
-	c.writeFile(proxy.ConfigFile, d, nil)
+	c.writeFile(ctx, pipe.ConfigFile, d, nil)
 }
 
 func (c *ConfigCtx) Watch(ctx context.Context, update func()) {
@@ -265,7 +263,7 @@ func (c *ConfigCtx) Watch(ctx context.Context, update func()) {
 					select {
 					case <-c.updateCh:
 					case <-time.After(c.interval):
-						c.Save()
+						c.Save(ctx)
 						update()
 						continue loop
 					case <-ctx.Done():
@@ -296,9 +294,9 @@ func (c *ConfigCtx) deleteFile(name string) {
 	return
 }
 
-func (c *ConfigCtx) writeFile(name string, com bind.Component, msg proto.Message) {
+func (c *ConfigCtx) writeFile(ctx context.Context, name string, com bind.Component, msg proto.Message) {
 	file := filepath.Join(c.basePath, name)
-	log := logger.FromContext(c.ctx)
+	log := logger.FromContext(ctx)
 	data, err := yaml.Marshal(com)
 	if err != nil {
 		log.Error(err, "Marshal")

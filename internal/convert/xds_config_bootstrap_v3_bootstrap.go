@@ -6,13 +6,7 @@ import (
 )
 
 func Convert_config_bootstrap_v3_Bootstrap(conf *config.ConfigCtx, c *envoy_config_bootstrap_v3.Bootstrap) (string, error) {
-	//if c.Node != nil {
-	//	_, err := Convert_config_core_v3_Node(conf, c.Node)
-	//	if err != nil {
-	//		return "", err
-	//	}
-	//}
-	//
+
 	if c.Admin != nil {
 		_, err := Convert_config_bootstrap_v3_Admin(conf, c.Admin)
 		if err != nil {

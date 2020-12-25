@@ -2,7 +2,7 @@ FROM golang:alpine AS builder
 WORKDIR /go/src/github.com/pipeproxy/pipe-xds/
 COPY . .
 ENV CGO_ENABLED=0
-RUN go install ./cmd/...
+RUN go install ./cmd/envoy
 
 FROM alpine
 RUN apk add -U --no-cache curl iptables ip6tables procps
