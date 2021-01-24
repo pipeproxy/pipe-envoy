@@ -21,11 +21,12 @@ import (
 )
 
 type Config struct {
-	Node     *envoy_config_core_v3.Node
-	XDS      string
-	SDS      string
-	BasePath string
-	Interval time.Duration
+	Node      *envoy_config_core_v3.Node
+	IsDynamic bool
+	XDS       string
+	SDS       string
+	BasePath  string
+	Interval  time.Duration
 }
 
 type Proxy struct {
@@ -40,11 +41,14 @@ func NewProxy(c *Config) (*Proxy, error) {
 	if c.Interval == 0 {
 		c.Interval = time.Second
 	}
-	return &Proxy{
+	p := &Proxy{
 		conf:   config.NewConfigCtx(c.BasePath, c.Interval),
-		ads:    adsc.NewADSC(c.XDS, c.SDS, c.Node),
 		config: c,
-	}, nil
+	}
+	if c.IsDynamic {
+		p.ads = adsc.NewADSC(c.XDS, c.SDS, c.Node)
+	}
+	return p, nil
 }
 
 func (a *Proxy) ConfigCtx() *config.ConfigCtx {
@@ -56,6 +60,11 @@ func (a *Proxy) ADSC() *adsc.ADSC {
 }
 
 func (a *Proxy) Run(ctx context.Context) error {
+	a.startAndUpdatePipe(ctx)
+	if a.ads == nil {
+		<-ctx.Done()
+		return nil
+	}
 	err := a.init(ctx)
 	if err != nil {
 		return err
@@ -136,8 +145,6 @@ func (a *Proxy) init(ctx context.Context) error {
 		}
 		a.conf.Update()
 	}
-
-	a.startAndUpdatePipe(ctx)
 	return nil
 }
 

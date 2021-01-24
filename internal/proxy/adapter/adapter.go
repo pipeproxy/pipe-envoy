@@ -29,11 +29,12 @@ func NewAdapter(c *Config) (*proxy.Proxy, error) {
 		return nil, err
 	}
 	p, err := proxy.NewProxy(&proxy.Config{
-		Node:     bootstrap.GetNode(),
-		BasePath: c.BasePath,
-		XDS:      XDS,
-		SDS:      SDS,
-		Interval: time.Second,
+		IsDynamic: bootstrap.DynamicResources != nil,
+		Node:      bootstrap.GetNode(),
+		BasePath:  c.BasePath,
+		XDS:       XDS,
+		SDS:       SDS,
+		Interval:  time.Second,
 	})
 	if err != nil {
 		return nil, err

@@ -2,7 +2,6 @@ package encoding
 
 import (
 	"bytes"
-	"encoding/json"
 
 	envoy_config_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/golang/protobuf/jsonpb"
@@ -23,7 +22,8 @@ var (
 		AnyResolver: anyResolver,
 	}
 	unmarshaler = jsonpb.Unmarshaler{
-		AnyResolver: anyResolver,
+		AllowUnknownFields: true,
+		AnyResolver:        anyResolver,
 	}
 )
 
@@ -37,9 +37,7 @@ func Marshal(pb proto.Message) ([]byte, error) {
 }
 
 func Unmarshal(data []byte, pb proto.Message) error {
-	dec := json.NewDecoder(bytes.NewBuffer(data))
-	dec.DisallowUnknownFields()
-	return unmarshaler.UnmarshalNext(dec, pb)
+	return unmarshaler.Unmarshal(bytes.NewBuffer(data), pb)
 }
 
 func UnmarshalAny(a *any.Any) (proto.Message, error) {
